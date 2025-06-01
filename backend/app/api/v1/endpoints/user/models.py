@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 import enum
 from app.db.base import Base
+from app.core.security import verify_password
 
 class OAuthProvider(str, enum.Enum):
     GOOGLE = "google"
@@ -54,6 +55,12 @@ class User(Base):
     
     # Role related fields
     roles = relationship("Role", secondary=user_roles, lazy="joined")
+
+    def verify_password(self, password: str) -> bool:
+        """Verify the password against the hashed password."""
+        if not self.hashed_password:
+            return False
+        return verify_password(password, self.hashed_password)
 
 class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"

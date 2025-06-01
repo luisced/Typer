@@ -6,7 +6,7 @@ This module provides user management functionality including authentication, reg
 
 ### Register User
 ```http
-POST /api/v1/user/register
+POST /api/v1/users/register
 Content-Type: application/json
 
 {
@@ -18,7 +18,7 @@ Content-Type: application/json
 ```
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/user/register \
+curl -X POST http://localhost:8000/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -33,24 +33,27 @@ curl -X POST http://localhost:8000/api/v1/user/register \
 
 ### Login
 ```http
-POST /api/v1/user/login
-Content-Type: application/json
+POST /api/v1/users/login
+Content-Type: application/x-www-form-urlencoded
 
-{
-    "email": "user@example.com",
-    "password": "securepassword"
-}
+username=user@example.com&password=securepassword
+# OR
+username=username&password=securepassword
 ```
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/user/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "securepassword"
-  }'
+# Login with email
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user@example.com&password=securepassword"
+
+# Login with username
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=username&password=securepassword"
 ```
 - Authenticates user credentials
+- Accepts either email or username in the username field
 - Returns access and refresh tokens
 - Updates last login timestamp
 
@@ -58,12 +61,12 @@ curl -X POST http://localhost:8000/api/v1/user/login \
 
 ### Get Current User
 ```http
-GET /api/v1/user/me
+GET /api/v1/users/me
 Authorization: Bearer <access_token>
 ```
 
 ```bash
-curl -X GET http://localhost:8000/api/v1/user/me \
+curl -X GET http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 ```
 - Returns the authenticated user's profile
@@ -71,7 +74,7 @@ curl -X GET http://localhost:8000/api/v1/user/me \
 
 ### Update Current User
 ```http
-PUT /api/v1/user/me
+PUT /api/v1/users/me
 Authorization: Bearer <access_token>
 Content-Type: application/json
 
@@ -84,7 +87,7 @@ Content-Type: application/json
 ```
 
 ```bash
-curl -X PUT http://localhost:8000/api/v1/user/me \
+curl -X PUT http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -100,16 +103,95 @@ curl -X PUT http://localhost:8000/api/v1/user/me \
 
 ### Delete Current User
 ```http
-DELETE /api/v1/user/me
+DELETE /api/v1/users/me
 Authorization: Bearer <access_token>
 ```
 
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/user/me \
+curl -X DELETE http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 ```
 - Deletes the authenticated user's account
 - Cascades deletion to related data (OAuth accounts, profile)
+
+## Role Management Endpoints
+
+### Get User Roles
+```http
+GET /api/v1/users/me/roles
+Authorization: Bearer <access_token>
+```
+
+```bash
+curl -X GET http://localhost:8000/api/v1/users/me/roles \
+  -H "Authorization: Bearer <access_token>"
+```
+- Returns list of roles assigned to the current user
+- Requires valid access token
+
+### Assign Role to Current User
+```http
+POST /api/v1/users/me/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Assign ADMIN role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Assign USER role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/user \
+  -H "Authorization: Bearer <access_token>"
+```
+- Assigns a role to the current user
+- Available roles: `user`, `admin`
+- Requires valid access token
+
+### Remove Role from Current User
+```http
+DELETE /api/v1/users/me/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Remove ADMIN role from current user
+curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Removes a role from the current user
+- Available roles: `user`, `admin`
+- Requires valid access token
+
+### Admin: Assign Role to User
+```http
+POST /api/v1/users/{user_id}/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Admin assigns ADMIN role to another user
+curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Assigns a role to any user
+- Requires ADMIN role
+- Available roles: `user`, `admin`
+
+### Admin: Remove Role from User
+```http
+DELETE /api/v1/users/{user_id}/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Admin removes ADMIN role from another user
+curl -X DELETE http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Removes a role from any user
+- Requires ADMIN role
+- Available roles: `user`, `admin`
 
 ## OAuth Integration
 
@@ -122,7 +204,7 @@ The module supports OAuth authentication through multiple providers:
 ### OAuth Login Example (Google)
 ```bash
 # First, redirect user to Google OAuth URL
-curl -X GET "http://localhost:8000/api/v1/user/oauth/google/login"
+curl -X GET "http://localhost:8000/api/v1/users/oauth/google/login"
 
 # After user authorizes, Google will redirect to callback URL with code
 # The callback will return access and refresh tokens
@@ -206,7 +288,7 @@ You can test the API using curl or any HTTP client. Here's a complete flow examp
 
 ```bash
 # 1. Register a new user
-curl -X POST http://localhost:8000/api/v1/user/register \
+curl -X POST http://localhost:8000/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -215,20 +297,22 @@ curl -X POST http://localhost:8000/api/v1/user/register \
     "full_name": "Test User"
   }'
 
-# 2. Login with the new user
-curl -X POST http://localhost:8000/api/v1/user/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "testpass123"
-  }'
+# 2. Login with email
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=test@example.com&password=testpass123"
+
+# 2b. Or login with username
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=testuser&password=testpass123"
 
 # 3. Use the returned access token to get user profile
-curl -X GET http://localhost:8000/api/v1/user/me \
+curl -X GET http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 
 # 4. Update user profile
-curl -X PUT http://localhost:8000/api/v1/user/me \
+curl -X PUT http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -236,6 +320,23 @@ curl -X PUT http://localhost:8000/api/v1/user/me \
   }'
 
 # 5. Delete user account
-curl -X DELETE http://localhost:8000/api/v1/user/me \
+curl -X DELETE http://localhost:8000/api/v1/users/me \
+  -H "Authorization: Bearer <access_token>"
+
+# 6. Role Management Examples
+# Get current user's roles
+curl -X GET http://localhost:8000/api/v1/users/me/roles \
+  -H "Authorization: Bearer <access_token>"
+
+# Assign ADMIN role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Remove ADMIN role from current user
+curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Admin assigns role to another user
+curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
   -H "Authorization: Bearer <access_token>"
 ``` 
