@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 
 app = FastAPI(
     title="Typer API",
@@ -19,6 +21,22 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Welcome to Typer API"}
+
+@app.get("/health")
+async def health_check(db: Session = Depends(get_db)):
+    try:
+        # Try to execute a simple query to check database connectivity
+        db.execute("SELECT 1")
+        return {
+            "status": "healthy",
+            "database": "connected"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 # Import and include routers
 from app.api.v1.api import api_router
