@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Set
 from app.api.v1.endpoints.user import models, schemas
 from app.core.security import get_password_hash
+import uuid
 
 class UserRepository:
     def __init__(self, db: Session):
@@ -18,6 +19,7 @@ class UserRepository:
 
     def create(self, user: schemas.UserCreate) -> models.User:
         db_user = models.User(
+            id=str(uuid.uuid4()),
             email=user.email,
             username=user.username,
             hashed_password=get_password_hash(user.password),
@@ -54,6 +56,7 @@ class UserRepository:
 
     def create_oauth_account(self, user_id: str, oauth_data: schemas.OAuthAccountBase) -> models.OAuthAccount:
         oauth_account = models.OAuthAccount(
+            id=str(uuid.uuid4()),
             user_id=user_id,
             **oauth_data.dict()
         )
@@ -68,20 +71,39 @@ class UserRepository:
             models.OAuthAccount.provider_user_id == provider_user_id
         ).first()
         
-    def get_user_roles(self, user_id: str) -> Set[models.Role]:
+    def get_user_roles(self, user_id: str) -> Set[models.RoleType]:
         user = self.get_by_id(user_id)
         if not user:
             return set()
-        return user.roles
+        return {role.name for role in user.roles}
         
-    def assign_role(self, user_id: str, role: models.Role) -> None:
+    def assign_role(self, user_id: str, role_type: models.RoleType) -> None:
         user = self.get_by_id(user_id)
-        if user and role not in user.roles:
-            user.roles.add(role)
+        if not user:
+            return
+            
+        # Get or create the role
+        role = self.db.query(models.Role).filter(models.Role.name == role_type).first()
+        if not role:
+            role = models.Role(
+                id=str(uuid.uuid4()),
+                name=role_type,
+                description=f"Role for {role_type.value}"
+            )
+            self.db.add(role)
             self.db.commit()
             
-    def remove_role(self, user_id: str, role: models.Role) -> None:
+        # Assign role to user if not already assigned
+        if role not in user.roles:
+            user.roles.append(role)
+            self.db.commit()
+            
+    def remove_role(self, user_id: str, role_type: models.RoleType) -> None:
         user = self.get_by_id(user_id)
-        if user and role in user.roles:
+        if not user:
+            return
+            
+        role = self.db.query(models.Role).filter(models.Role.name == role_type).first()
+        if role and role in user.roles:
             user.roles.remove(role)
             self.db.commit() 

@@ -10,16 +10,25 @@ class OAuthProvider(str, enum.Enum):
     FACEBOOK = "facebook"
     LOCAL = "local"
 
-class Role(str, enum.Enum):
+class RoleType(str, enum.Enum):
     USER = "user"
     ADMIN = "admin"
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(Enum(RoleType), unique=True, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 # Association tables
 user_roles = Table(
     "user_roles",
     Base.metadata,
     Column("user_id", String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("role", Enum(Role), primary_key=True),
+    Column("role_id", String, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
     Column("assigned_at", DateTime, default=lambda: datetime.now(UTC))
 )
 
@@ -44,7 +53,7 @@ class User(Base):
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     # Role related fields
-    roles = relationship("Role", secondary=user_roles, collection_class=set)
+    roles = relationship("Role", secondary=user_roles, lazy="joined")
 
 class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"
