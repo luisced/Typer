@@ -1,20 +1,35 @@
+# ─────────────────────────────────────────────────────────────
+# Dockerfile para Desarrollo
+# ─────────────────────────────────────────────────────────────
 FROM python:3.12-slim
+
+# Evitamos archivos .pyc y dejamos logs sin buffer
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    curl \
+# Instalamos dependencias de sistema necesarias para compilar extensiones nativas
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       gcc \
+       libpq-dev \
+       curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
+# Copiamos el requirements para aprovechar cache de Docker cuando no cambien
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Actualizamos pip y instalamos dependencias de Python
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install -r requirements.txt
+
+# Copiamos el resto del código (en dev usaremos volumen para sobreescribir)
 COPY . .
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+# Exponemos el puerto donde corre uvicorn
+EXPOSE 8000
+
+# Ejecutamos uvicorn en modo desarrollo (reload)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
