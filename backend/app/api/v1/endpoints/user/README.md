@@ -114,6 +114,85 @@ curl -X DELETE http://localhost:8000/api/v1/users/me \
 - Deletes the authenticated user's account
 - Cascades deletion to related data (OAuth accounts, profile)
 
+## Role Management Endpoints
+
+### Get User Roles
+```http
+GET /api/v1/users/me/roles
+Authorization: Bearer <access_token>
+```
+
+```bash
+curl -X GET http://localhost:8000/api/v1/users/me/roles \
+  -H "Authorization: Bearer <access_token>"
+```
+- Returns list of roles assigned to the current user
+- Requires valid access token
+
+### Assign Role to Current User
+```http
+POST /api/v1/users/me/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Assign ADMIN role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Assign USER role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/user \
+  -H "Authorization: Bearer <access_token>"
+```
+- Assigns a role to the current user
+- Available roles: `user`, `admin`
+- Requires valid access token
+
+### Remove Role from Current User
+```http
+DELETE /api/v1/users/me/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Remove ADMIN role from current user
+curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Removes a role from the current user
+- Available roles: `user`, `admin`
+- Requires valid access token
+
+### Admin: Assign Role to User
+```http
+POST /api/v1/users/{user_id}/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Admin assigns ADMIN role to another user
+curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Assigns a role to any user
+- Requires ADMIN role
+- Available roles: `user`, `admin`
+
+### Admin: Remove Role from User
+```http
+DELETE /api/v1/users/{user_id}/roles/{role_type}
+Authorization: Bearer <access_token>
+```
+
+```bash
+# Admin removes ADMIN role from another user
+curl -X DELETE http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+```
+- Removes a role from any user
+- Requires ADMIN role
+- Available roles: `user`, `admin`
+
 ## OAuth Integration
 
 The module supports OAuth authentication through multiple providers:
@@ -242,5 +321,22 @@ curl -X PUT http://localhost:8000/api/v1/users/me \
 
 # 5. Delete user account
 curl -X DELETE http://localhost:8000/api/v1/users/me \
+  -H "Authorization: Bearer <access_token>"
+
+# 6. Role Management Examples
+# Get current user's roles
+curl -X GET http://localhost:8000/api/v1/users/me/roles \
+  -H "Authorization: Bearer <access_token>"
+
+# Assign ADMIN role to current user
+curl -X POST http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Remove ADMIN role from current user
+curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
+  -H "Authorization: Bearer <access_token>"
+
+# Admin assigns role to another user
+curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
   -H "Authorization: Bearer <access_token>"
 ``` 

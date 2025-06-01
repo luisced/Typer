@@ -24,21 +24,16 @@ class UserService:
         return user
 
     def create_user(self, user: schemas.UserCreate) -> models.User:
-        # Check if user with email exists
-        if self.repository.get_by_email(user.email):
-            raise ValueError("Email already registered")
-            
-        # Check if username is taken
-        if self.repository.get_by_username(user.username):
-            raise ValueError("Username already taken")
-            
-        # Create user
-        db_user = self.repository.create(user)
-        
-        # Assign default role
-        self.repository.assign_role(db_user.id, models.RoleType.USER)
-        
-        return db_user
+        try:
+            # Create user with appropriate role and superuser status
+            db_user = self.repository.create(user)
+            return db_user
+        except ValueError as e:
+            # Re-raise ValueError with a more descriptive message
+            raise ValueError(str(e))
+        except Exception as e:
+            # Log the unexpected error and raise a generic error
+            raise ValueError("An unexpected error occurred while creating the user")
 
     def get_user(self, user_id: str) -> Optional[models.User]:
         return self.repository.get_by_id(user_id)
@@ -85,6 +80,21 @@ class UserService:
         return self.repository.get_user_roles(user_id)
         
     def assign_role(self, user_id: str, role_type: models.RoleType) -> None:
+        # Get the user and current user roles
+        user = self.repository.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+
+        # Get current roles
+        current_roles = self.get_user_roles(user_id)
+        
+        # Check if trying to assign a higher role
+        if role_type == models.RoleType.ADMIN and models.RoleType.ADMIN not in current_roles:
+            # Only allow if the user already has admin role
+            if not self.is_admin(user_id):
+                raise ValueError("Cannot assign admin role to yourself")
+        
+        # Assign the role
         self.repository.assign_role(user_id, role_type)
         
     def remove_role(self, user_id: str, role_type: models.RoleType) -> None:
