@@ -4,7 +4,7 @@ from sqlalchemy import pool
 from alembic import context
 from app.core.config import settings
 from app.db.base import Base
-from app.api.v1.endpoints.user.models import User, OAuthAccount, UserProfile 
+from app.api.v1.endpoints.user.models import User, OAuthAccount, UserProfile, Role, user_roles
 import os
 from dotenv import load_dotenv
 

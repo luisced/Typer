@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Enum, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 import enum
@@ -9,6 +9,19 @@ class OAuthProvider(str, enum.Enum):
     GITHUB = "github"
     FACEBOOK = "facebook"
     LOCAL = "local"
+
+class Role(str, enum.Enum):
+    USER = "user"
+    ADMIN = "admin"
+
+# Association tables
+user_roles = Table(
+    "user_roles",
+    Base.metadata,
+    Column("user_id", String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("role", Enum(Role), primary_key=True),
+    Column("assigned_at", DateTime, default=lambda: datetime.now(UTC))
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -29,6 +42,9 @@ class User(Base):
     
     # Profile related fields
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    
+    # Role related fields
+    roles = relationship("Role", secondary=user_roles, collection_class=set)
 
 class OAuthAccount(Base):
     __tablename__ = "oauth_accounts"

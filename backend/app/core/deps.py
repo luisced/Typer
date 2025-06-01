@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
 from app.api.v1.endpoints.user.repository import UserRepository
+from app.api.v1.endpoints.user.models import Role
+from typing import List, Optional
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/users/login")
 
@@ -29,4 +31,24 @@ async def get_current_user(
     user = user_repo.get_by_id(user_id)
     if user is None:
         raise credentials_exception
-    return user 
+    return user
+
+def require_roles(required_roles: List[Role]):
+    async def role_checker(
+        current_user: dict = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ):
+        user_repo = UserRepository(db)
+        user_roles = user_repo.get_user_roles(current_user.id)
+        
+        # Superusers bypass role checks
+        if current_user.is_superuser:
+            return current_user
+            
+        if not any(role in user_roles for role in required_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
+        return current_user
+    return role_checker 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Set
 from app.api.v1.endpoints.user import models, schemas
 from app.core.security import get_password_hash
 
@@ -66,4 +66,22 @@ class UserRepository:
         return self.db.query(models.OAuthAccount).filter(
             models.OAuthAccount.provider == provider,
             models.OAuthAccount.provider_user_id == provider_user_id
-        ).first() 
+        ).first()
+        
+    def get_user_roles(self, user_id: str) -> Set[models.Role]:
+        user = self.get_by_id(user_id)
+        if not user:
+            return set()
+        return user.roles
+        
+    def assign_role(self, user_id: str, role: models.Role) -> None:
+        user = self.get_by_id(user_id)
+        if user and role not in user.roles:
+            user.roles.add(role)
+            self.db.commit()
+            
+    def remove_role(self, user_id: str, role: models.Role) -> None:
+        user = self.get_by_id(user_id)
+        if user and role in user.roles:
+            user.roles.remove(role)
+            self.db.commit() 

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Set
 from sqlalchemy.orm import Session
 from app.api.v1.endpoints.user import models, schemas, repository
 from app.core.security import verify_password, create_access_token, create_refresh_token
@@ -24,6 +24,10 @@ class UserService:
         
         # Create user with UUID
         db_user = self.repository.create(user)
+        
+        # Assign default USER role
+        self.repository.assign_role(db_user.id, models.Role.USER)
+        
         return db_user
 
     def get_user(self, user_id: str) -> Optional[models.User]:
@@ -58,4 +62,17 @@ class UserService:
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer"
-        ) 
+        )
+        
+    def get_user_roles(self, user_id: str) -> Set[models.Role]:
+        return self.repository.get_user_roles(user_id)
+        
+    def assign_role(self, user_id: str, role: models.Role) -> None:
+        self.repository.assign_role(user_id, role)
+        
+    def remove_role(self, user_id: str, role: models.Role) -> None:
+        self.repository.remove_role(user_id, role)
+        
+    def is_admin(self, user_id: str) -> bool:
+        roles = self.get_user_roles(user_id)
+        return models.Role.ADMIN in roles 
