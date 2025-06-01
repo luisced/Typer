@@ -10,8 +10,13 @@ class UserService:
         self.repository = repository.UserRepository(db)
         self.db = db
 
-    def authenticate(self, email: str, password: str) -> Optional[models.User]:
-        user = self.repository.get_by_email(email)
+    def authenticate(self, username: str, password: str) -> Optional[models.User]:
+        # Try to find user by email first
+        user = self.repository.get_by_email(username)
+        if not user:
+            # If not found by email, try username
+            user = self.repository.get_by_username(username)
+        
         if not user or not user.hashed_password:
             return None
         if not user.verify_password(password):
