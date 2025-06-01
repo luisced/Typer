@@ -1,0 +1,65 @@
+# ────────────────
+# Python (FastAPI)
+# ────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.sqlite3
+*.log
+*.db
+*.pid
+*.pem
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+
+# Alembic
+alembic/versions/*.pyc
+
+# ────────────────
+# Node.js (React / Vite)
+# ────────────────
+node_modules/
+dist/
+.build/
+.vite/
+*.log
+.yarn/
+.pnpm-debug.log
+.npm/
+
+# ────────────────
+# Environment files
+# ────────────────
+.env
+.env.*
+!.env.example
+
+# ────────────────
+# Docker
+# ────────────────
+**/.docker/
+**/Dockerfile.*
+docker-compose.override.yml
+
+# ────────────────
+# OS / Editor junk
+# ────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*.swp
+*.swo
+*.bak
+*~
+
+# ────────────────
+# VSCode
+# ────────────────
+.vscode/
+.history/
+*.code-workspace
