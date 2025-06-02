@@ -530,3 +530,4 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 }
 
 export default AdvancedTypingTest
+ 

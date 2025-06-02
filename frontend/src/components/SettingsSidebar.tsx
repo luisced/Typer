@@ -1,22 +1,23 @@
 import { useState } from 'react'
-import { Box, Flex, Text, Icon, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, useDisclosure, Button } from '@chakra-ui/react'
-import { FaUser, FaKey, FaExclamationTriangle, FaShieldAlt } from 'react-icons/fa'
+import {
+  Box, Flex, Text, Icon, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, useDisclosure, Button, Input, FormControl, FormLabel, VStack
+} from '@chakra-ui/react'
+import { FaUser, FaKey, FaExclamationTriangle, FaShieldAlt, FaGoogle, FaGithub, FaLock, FaSignOutAlt, FaPlug } from 'react-icons/fa'
 
 const options = [
   { key: 'account', label: 'account', icon: FaUser, active: true },
-  { key: 'authentication', label: 'authentication', icon: FaKey, active: false },
-  { key: 'danger', label: 'danger zone', icon: FaExclamationTriangle, active: false },
+  { key: 'authentication', label: 'authentication', icon: FaKey, active: true },
+  { key: 'danger', label: 'danger zone', icon: FaExclamationTriangle, active: true },
   { key: 'admin', label: 'admin', icon: FaShieldAlt, active: false },
 ]
 
-const SettingsSidebar = () => {
-  const [selected, setSelected] = useState('account')
+const SettingsSidebar = ({ selected, setSelected }: { selected: string, setSelected: (key: string) => void }) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   const handleOptionClick = (key: string, isActive: boolean) => {
     if (!isActive) return
     setSelected(key)
-    onOpen()
+    if (key !== 'authentication') onOpen()
   }
 
   return (
@@ -49,16 +50,7 @@ const SettingsSidebar = () => {
           ))}
         </Flex>
       </Box>
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent bg="gray.800" color="gray.100">
-          <ModalHeader textTransform="capitalize">{selected}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text>This is the <b>{selected}</b> settings tab.</Text>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+
     </>
   )
 }
