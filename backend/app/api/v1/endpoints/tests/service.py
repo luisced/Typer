@@ -1,5 +1,5 @@
-from .repository import UserTestRepository
-from . import schemas, models
+from app.api.v1.endpoints.tests.repository import UserTestRepository
+from app.api.v1.endpoints.tests import schemas, models
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -18,9 +18,13 @@ class UserTestService:
             id=db_test.id,
             user_id=db_test.user_id,
             wpm=db_test.wpm,
+            raw_wpm=db_test.raw_wpm,
             accuracy=db_test.accuracy,
+            consistency=db_test.consistency,
             test_type=db_test.test_type,
             duration=db_test.duration,
+            chars=db_test.chars,
+            restarts=db_test.restarts,
             timestamp=db_test.timestamp,
             char_logs=[
                 schemas.UserTestCharLogRead(

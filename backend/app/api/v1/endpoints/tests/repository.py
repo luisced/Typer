@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
+from app.api.v1.endpoints.tests import models, schemas
 from uuid import uuid4
 from typing import List
-from datetime import datetime
+from datetime import datetime, UTC
 
 class UserTestRepository:
     def __init__(self, db: Session):
@@ -13,10 +13,14 @@ class UserTestRepository:
             id=str(uuid4()),
             user_id=user_id,
             wpm=test.wpm,
+            raw_wpm=test.raw_wpm,
             accuracy=test.accuracy,
+            consistency=test.consistency,
             test_type=test.test_type,
             duration=test.duration,
-            timestamp=test.timestamp or datetime.utcnow()
+            chars=test.chars,
+            restarts=test.restarts,
+            timestamp=test.timestamp or datetime.now(UTC)
         )
         self.db.add(db_test)
         self.db.commit()

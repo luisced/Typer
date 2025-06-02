@@ -1,4 +1,5 @@
-import { ChakraProvider } from '@chakra-ui/react'
+import React from 'react';
+import { ChakraProvider, Box } from '@chakra-ui/react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { getTheme } from './theme'
@@ -8,7 +9,7 @@ import AppRoutes from './routes'
 // Create a client
 const queryClient = new QueryClient()
 
-function App() {
+const App: React.FC = () => {
   const { config } = useCustomizationStore()
   const theme = getTheme(config.theme, config.accent)
   return (
@@ -17,6 +18,7 @@ function App() {
         <BrowserRouter>
           <AppRoutes />
         </BrowserRouter>
+
       </ChakraProvider>
     </QueryClientProvider>
   )

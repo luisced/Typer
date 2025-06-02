@@ -15,10 +15,10 @@ import {
   ModalCloseButton,
   Textarea
 } from '@chakra-ui/react'
-import Stats from './Stats'
 import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
 import type { CustomizationConfig } from '../store/customizationStore'
+import { saveTest } from '../api/tests'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
@@ -93,6 +93,17 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   const [finished, setFinished] = useState<boolean>(false)
   const [customText, setCustomText] = useState<string>('')
   const [isZenMode, setIsZenMode] = useState<boolean>(false)
+  const [duration, setDuration] = useState<number>(0)
+  const [restarts, setRestarts] = useState<number>(0)
+  const [consistency, setConsistency] = useState<number>(0)
+  const [charStats, setCharStats] = useState({
+    correct: 0,
+    incorrect: 0,
+    extra: 0,
+    missed: 0
+  })
+  const [keystrokes, setKeystrokes] = useState<number[]>([])
+  const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const toast = useToast()
 
   // Ref for the text container
@@ -208,7 +219,9 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   useEffect(() => {
     if (!isActive || finished || modes.includes('zen')) return
     if (timer === 0) {
-      endTest()
+      if (!finished) {
+        endTest()
+      }
       return
     }
     const interval = setInterval(() => {
@@ -223,14 +236,41 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isActive && !finished) {
       setIsActive(true)
-      setStartTime(Date.now())
+      const now = Date.now()
+      setStartTime(now)
+      setLastKeystrokeTime(now)
+      // Start duration tracking for words-only mode
+      if (modes.includes('words') && !modes.includes('time')) {
+        setDuration(0)
+      }
     }
     if (finished) return
     const value = e.target.value
     // Prevent typing beyond the length of `text`
     if (value.length > text.length) return
+
+    // Track keystroke timing for consistency
+    const now = Date.now()
+    if (lastKeystrokeTime) {
+      setKeystrokes(prev => [...prev, now - lastKeystrokeTime])
+    }
+    setLastKeystrokeTime(now)
+
     setUserInput(value)
   }
+
+  // Update duration for words-only mode
+  useEffect(() => {
+    if (!isActive || finished || !modes.includes('words') || modes.includes('time')) return
+    
+    const interval = setInterval(() => {
+      if (startTime) {
+        setDuration(Math.floor((Date.now() - startTime) / 1000))
+      }
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [isActive, finished, modes, startTime])
 
   // Recompute WPM, accuracy, and check for test completion
   useEffect(() => {
@@ -248,22 +288,94 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     // If fully typed and not in zen mode, end the test
     if (
       userInput.length === text.length &&
-      text.length > 0 &&
+      !modes.includes('zen') &&
       !finished &&
-      !modes.includes('zen')
+      isActive
     ) {
       endTest()
     }
-  }, [userInput, text, isActive, startTime, finished, modes])
+  }, [userInput, text, isActive, startTime, modes, finished])
 
-  const endTest = useCallback(() => {
-    setIsActive(false)
+  // Calculate consistency based on keystroke timing
+  const calculateConsistency = (keystrokes: number[]): number => {
+    if (keystrokes.length < 2) return 0;
+    const avg = keystrokes.reduce((a, b) => a + b, 0) / keystrokes.length;
+    const withinRange = keystrokes.filter(t => 
+      Math.abs(t - avg) / avg <= 0.2
+    ).length;
+    return (withinRange / keystrokes.length) * 100;
+  };
+
+  const endTest = async () => {
     setFinished(true)
-    setShowResults(true)
-  }, [])
+    setIsActive(false)
+    
+    // Calculate final duration
+    const finalDuration = modes.includes('time') 
+      ? subOptions.time 
+      : modes.includes('words') 
+        ? duration 
+        : DEFAULT_TIME
+
+    // Calculate raw WPM (all characters / 5 / minutes)
+    const rawWpm = startTime 
+      ? Math.round((userInput.length / 5) / (finalDuration / 60) * 100) / 100
+      : 0
+
+    // Calculate character statistics
+    let correct = 0
+    let incorrect = 0
+    let extra = 0
+    let missed = 0
+
+    for (let i = 0; i < Math.max(text.length, userInput.length); i++) {
+      if (i >= text.length) {
+        extra++ // User typed more than the text
+      } else if (i >= userInput.length) {
+        missed++ // User didn't type enough
+      } else if (userInput[i] === text[i]) {
+        correct++
+      } else {
+        incorrect++
+      }
+    }
+
+    // Calculate consistency
+    const consistencyScore = calculateConsistency(keystrokes)
+
+    try {
+      await saveTest({
+        wpm,
+        raw_wpm: rawWpm,
+        accuracy,
+        consistency: consistencyScore,
+        test_type: modes.join(','),
+        duration: finalDuration,
+        char_logs: [], // TODO: Implement character-level logging
+        timestamp: new Date().toISOString(),
+        chars: {
+          correct,
+          incorrect,
+          extra,
+          missed
+        },
+        restarts
+      })
+      setShowResults(true)
+    } catch (error) {
+      toast({
+        title: 'Error saving test results',
+        description: 'Please try again later',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    }
+  }
 
   // Reset everything and pick a new passage/words based on modes
   const handleReset = useCallback(() => {
+    setRestarts(prev => prev + 1)
     if (modes.includes('punctuation')) {
       setText(punctuationSample)
       setTimer(DEFAULT_TIME)
@@ -296,6 +408,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setShowResults(false)
     setStartTime(null)
     setFinished(false)
+    setKeystrokes([])
+    setLastKeystrokeTime(null)
     // Refocus after a short delay
     setTimeout(() => inputRef.current?.focus(), 100)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -534,8 +648,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         </Flex>
       )}
 
-
-
       {/* Results Popup */}
       <Modal isOpen={showResults} onClose={() => setShowResults(false)} isCentered>
         <ModalOverlay />
@@ -553,10 +665,19 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
               WPM: <b>{wpm}</b>
             </Text>
             <Text fontSize="xl" mb={2}>
+              Raw WPM: <b>{Math.round((userInput.length / 5) / (duration / 60) * 100) / 100}</b>
+            </Text>
+            <Text fontSize="xl" mb={2}>
               Accuracy: <b>{accuracy}%</b>
             </Text>
             <Text fontSize="xl" mb={2}>
-              Characters Typed: <b>{userInput.length}</b>
+              Consistency: <b>{calculateConsistency(keystrokes).toFixed(1)}%</b>
+            </Text>
+            <Text fontSize="xl" mb={2}>
+              Characters: <b>{charStats.correct}/{charStats.incorrect}/{charStats.extra}/{charStats.missed}</b>
+            </Text>
+            <Text fontSize="xl" mb={2}>
+              Restarts: <b>{restarts}</b>
             </Text>
           </ModalBody>
           <ModalFooter>

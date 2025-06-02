@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class UserTestCharLogCreate(BaseModel):
@@ -10,11 +10,15 @@ class UserTestCharLogCreate(BaseModel):
 
 class UserTestCreate(BaseModel):
     wpm: float
+    raw_wpm: float
     accuracy: float
+    consistency: float
     test_type: str
     duration: int
     char_logs: List[UserTestCharLogCreate]
     timestamp: Optional[datetime] = None
+    chars: Dict[str, int]
+    restarts: int = 0
 
 class UserTestCharLogRead(UserTestCharLogCreate):
     id: str

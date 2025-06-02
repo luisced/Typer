@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Flex, Heading, Text, Spinner, VStack, Alert, AlertIcon, Button } from '@chakra-ui/react'
+import { Box, Flex } from '@chakra-ui/react'
 import OptionBar from '../components/OptionBar'
 import Stats from '../components/Stats'
 import AdvancedTypingTest from '../components/AdvancedTypingTest'
@@ -30,7 +30,6 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
 
   const { config: customization } = useCustomizationStore()
-  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -48,11 +47,7 @@ const Home: React.FC = () => {
     fetchUser()
   }, [])
 
-  const handleSignOut = () => {
-    Cookies.remove('access_token')
-    Cookies.remove('refresh_token')
-    navigate('/login')
-  }
+
 
   return (
     <Flex direction="column" bg="transparent" align="center" justify="flex-start" px={2}>
