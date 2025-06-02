@@ -315,7 +315,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         color = userInput[idx] === char ? 'white' : 'red.400'
         fontWeight = 'bold'
         if (customization.charFill && userInput[idx] === char) {
-          bg = 'blue.900'
+          bg = 'transparent'
         } else if (customization.charFill && userInput[idx] !== char) {
           bg = 'red.900'
         }
@@ -408,7 +408,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   }, [userInput, text, setWrittenWords, setTotalWords]);
 
   return (
-    <Flex direction="column"  bg="gray.900" align="center" justify="center" px={2}>
+    <Flex direction="column"  bg="transparent" align="center" justify="center" px={2}>
 
       {/* Text Display Area */}
       <Flex
@@ -447,6 +447,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
             userSelect="none"
             whiteSpace="pre-wrap"
             wordBreak="break-word"
+            bg="transparent"
             sx={{
               scrollbarWidth: 'none', // Firefox
               msOverflowStyle: 'none', // IE/Edge

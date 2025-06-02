@@ -1,6 +1,6 @@
 import { useCustomizationStore } from '../../store/customizationStore'
 import {
-  Box, VStack, FormControl, FormLabel, Select, Input, Button, Text, Switch, Slider, SliderTrack, SliderFilledTrack, SliderThumb, HStack, RadioGroup, Radio
+  Box, VStack, FormControl, FormLabel, Select, Input, Button, Text, Switch, Slider, SliderTrack, SliderFilledTrack, SliderThumb, HStack, RadioGroup, Radio, Box as ChakraBox
 } from '@chakra-ui/react'
 
 const themeOptions = [
@@ -28,15 +28,56 @@ const fontFamilies = [
 const CustomizationSettings = () => {
   const { config, setConfig, resetConfig } = useCustomizationStore()
 
+  const themeSwatches = [
+    { value: 'classic-dark', label: 'Classic Dark', color: '#1c1c1a' },
+    { value: 'moon-light', label: 'Moon Light', color: '#fff' },
+    { value: 'octagon', label: 'Octagon', color: 'var(--chakra-colors-gray-900)' },
+    { value: 'custom', label: 'Custom', color: config.accent },
+  ]
+
   return (
     <Box maxW="md" mx="auto" bg="gray.800" borderRadius="lg" p={8} boxShadow="lg">
       <VStack spacing={6} align="stretch">
         <Text fontSize="2xl" fontWeight="bold">Customization</Text>
-        {/* Theme Manager */}
+        {/* Theme Swatch Picker */}
         <FormControl>
           <FormLabel>Theme</FormLabel>
-          <Select value={config.theme} onChange={e => setConfig({ theme: e.target.value })} bg="gray.700" color="gray.100">
-            {themeOptions.map(opt => (
+          <HStack spacing={4} mb={2}>
+            {themeSwatches.map(opt => (
+              <ChakraBox
+                key={opt.value}
+                as="button"
+                aria-label={opt.label}
+                borderRadius="lg"
+                boxSize="40px"
+                bg={opt.color}
+                border={config.theme === opt.value ? '3px solid #FFD700' : '2px solid #444'}
+                boxShadow={config.theme === opt.value ? '0 0 0 2px #FFD700' : 'none'}
+                transition="all 0.2s"
+                outline="none"
+                _focus={{ boxShadow: '0 0 0 2px #3182ce' }}
+                onClick={() => setConfig({ theme: opt.value })}
+                position="relative"
+                cursor="pointer"
+              >
+                {opt.value === 'custom' && (
+                  <Box
+                    position="absolute"
+                    bottom={1}
+                    right={1}
+                    w="10px"
+                    h="10px"
+                    borderRadius="full"
+                    bg={config.accent}
+                    border="1px solid #fff"
+                  />
+                )}
+              </ChakraBox>
+            ))}
+          </HStack>
+          {/* Keep the dropdown for accessibility/fallback */}
+          <Select value={config.theme} onChange={e => setConfig({ theme: e.target.value })} bg="gray.700" color="gray.100" mt={2}>
+            {themeSwatches.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </Select>

@@ -26,7 +26,7 @@ const Home = () => {
   const { config: customization } = useCustomizationStore()
 
   return (
-    <Flex direction="column" bg="gray.900" align="center" justify="flex-start" px={2}>
+    <Flex direction="column" bg="transparent" align="center" justify="flex-start" px={2}>
       <OptionBar
         modes={modes}
         setModes={setModes}
