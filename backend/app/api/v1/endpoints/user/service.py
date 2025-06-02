@@ -148,7 +148,9 @@ class UserService:
         users_with_stats = self.repository.get_users_with_stats(time_mode, period, limit, offset)
         
         leaderboard_users = []
-        for i, (user, avg_wpm, avg_accuracy, avg_raw_wpm, avg_consistency, last_test_date, rank_percentile) in enumerate(users_with_stats, start=1):
+        for i, result in enumerate(users_with_stats, start=1):
+            user, avg_wpm, avg_accuracy, avg_raw_wpm, avg_consistency, last_test_date, test_count, rank_percentile = result
+            
             # Calculate rank based on percentile
             rank = int(rank_percentile * 100) if rank_percentile is not None else i
             

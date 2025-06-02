@@ -53,7 +53,7 @@ export const LeaderboardProvider: React.FC<{ children: ReactNode }> = ({ childre
     setLoading(true);
     setError(null);
     try {
-      const data = await getLeaderboard({
+      const response = await getLeaderboard({
         time_mode: timeMode === "all" ? "all" : timeMode,
         period: tab,
         limit: ITEMS_PER_PAGE,
@@ -65,11 +65,20 @@ export const LeaderboardProvider: React.FC<{ children: ReactNode }> = ({ childre
         start_date: startDate || undefined,
         end_date: endDate || undefined
       });
-      setUsers(data.data);
-      setTotalUsers(data.data.length);
-    } catch (err) {
-      setError('Failed to fetch leaderboard data');
+
+      if (response.data) {
+        setUsers(response.data);
+        setTotalUsers(response.data.length);
+      } else {
+        setUsers([]);
+        setTotalUsers(0);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.detail || 'Failed to fetch leaderboard data';
+      setError(errorMessage);
       console.error('Error fetching leaderboard:', err);
+      setUsers([]);
+      setTotalUsers(0);
     } finally {
       setLoading(false);
     }

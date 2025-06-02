@@ -10,15 +10,15 @@ export async function getCurrentUser() {
 
 export interface LeaderboardUser {
   id: string;
-  rank: number;
   name: string;
-  badges: string[];
   wpm: number;
   accuracy: number;
   raw: number;
   consistency: number;
+  rank: number;
   date: string;
   time: string;
+  badges: string[];
 }
 
 export interface LeaderboardParams {
@@ -35,5 +35,16 @@ export interface LeaderboardParams {
 }
 
 export async function getLeaderboard(params: LeaderboardParams = {}) {
-  return api.get<LeaderboardUser[]>('/users/leaderboard', { params });
+  try {
+    const response = await api.get<LeaderboardUser[]>('/users/leaderboard', { 
+      params,
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error('Leaderboard API error:', error);
+    throw error;
+  }
 } 
