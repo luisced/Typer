@@ -13,12 +13,26 @@ import {
   Progress,
   Button,
   ButtonGroup,
+  Spinner,
+  Alert,
+  AlertIcon,
+  Select,
+  Input,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  HStack,
+  VStack,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FaCrown, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { UserAvatar } from './UserAvatar';
 import { UserBadge } from './UserBadge';
-import { mockLeaderboardData } from '../../data/mockData';
+import { useLeaderboard } from '../../context/LeaderboardContext';
 
 const glow = keyframes`
   0% {
@@ -35,6 +49,28 @@ const glow = keyframes`
 export const LeaderboardTable: React.FC = () => {
   const [sortField, setSortField] = useState('rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const {
+    users,
+    loading,
+    error,
+    totalUsers,
+    currentPage,
+    setCurrentPage,
+    timeMode,
+    setTimeMode,
+    username,
+    setUsername,
+    testLength,
+    setTestLength,
+    language,
+    setLanguage,
+    minTests,
+    setMinTests,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate
+  } = useLeaderboard();
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -54,8 +90,135 @@ export const LeaderboardTable: React.FC = () => {
     );
   };
 
+  // Filter options
+  const modeOptions = [
+    { label: 'All Modes', value: 'all' },
+    { label: '15s', value: '15' },
+    { label: '60s', value: '60' },
+    { label: 'Words', value: 'words' },
+  ];
+
+  const languageOptions = [
+    { label: 'All Languages', value: 'all' },
+    { label: 'English', value: 'en' },
+    { label: 'Spanish', value: 'es' },
+    // Add more languages as needed
+  ];
+
+  const testLengthOptions = [
+    { label: 'Any Length', value: null },
+    { label: '10 Words', value: 10 },
+    { label: '25 Words', value: 25 },
+    { label: '50 Words', value: 50 },
+    { label: '100 Words', value: 100 },
+  ];
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" h="200px">
+        <Spinner size="xl" color="blue.500" />
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" variant="subtle" flexDirection="column" alignItems="center" justifyContent="center" textAlign="center" height="200px">
+        <AlertIcon boxSize="40px" mr={0} />
+        <Text mt={4}>{error}</Text>
+      </Alert>
+    );
+  }
+
   return (
     <Box>
+      {/* Filters Section */}
+      <VStack spacing={4} align="stretch" mb={6}>
+        <HStack spacing={4}>
+          {/* Mode Filter */}
+          <FormControl>
+            <FormLabel>Mode</FormLabel>
+            <Select value={timeMode} onChange={e => setTimeMode(e.target.value)}>
+              {modeOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Language Filter */}
+          <FormControl>
+            <FormLabel>Language</FormLabel>
+            <Select value={language} onChange={e => setLanguage(e.target.value)}>
+              {languageOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Test Length Filter */}
+          <FormControl>
+            <FormLabel>Test Length</FormLabel>
+            <Select
+              value={testLength || ''}
+              onChange={e => setTestLength(e.target.value ? Number(e.target.value) : null)}
+            >
+              {testLengthOptions.map(option => (
+                <option key={option.value || 'any'} value={option.value || ''}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Minimum Tests Filter */}
+          <FormControl>
+            <FormLabel>Min Tests</FormLabel>
+            <NumberInput
+              min={1}
+              value={minTests}
+              onChange={(_, value) => setMinTests(value)}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
+        </HStack>
+
+        <HStack spacing={4}>
+          {/* Username Search */}
+          <FormControl>
+            <FormLabel>Search Username</FormLabel>
+            <Input
+              placeholder="Search by username..."
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+            />
+          </FormControl>
+
+          {/* Date Range Filters */}
+          <FormControl>
+            <FormLabel>Start Date</FormLabel>
+            <Input
+              type="date"
+              value={startDate || ''}
+              onChange={e => setStartDate(e.target.value || null)}
+            />
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>End Date</FormLabel>
+            <Input
+              type="date"
+              value={endDate || ''}
+              onChange={e => setEndDate(e.target.value || null)}
+            />
+          </FormControl>
+        </HStack>
+      </VStack>
+
       <Box overflowX="auto">
         <Table variant="simple">
           <Thead>
@@ -114,7 +277,7 @@ export const LeaderboardTable: React.FC = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {mockLeaderboardData.map((user) => (
+            {users.map((user) => (
               <Tr
                 key={user.id}
                 sx={
@@ -206,15 +369,25 @@ export const LeaderboardTable: React.FC = () => {
 
       <Flex justify="space-between" align="center" mt={6} fontSize="sm">
         <Text color="gray.400">
-          Showing <Text as="span" fontWeight="medium">1</Text> to{' '}
-          <Text as="span" fontWeight="medium">15</Text> of{' '}
-          <Text as="span" fontWeight="medium">100</Text> results
+          Showing <Text as="span" fontWeight="medium">{(currentPage - 1) * 15 + 1}</Text> to{' '}
+          <Text as="span" fontWeight="medium">{Math.min(currentPage * 15, totalUsers)}</Text> of{' '}
+          <Text as="span" fontWeight="medium">{totalUsers}</Text> results
         </Text>
         <ButtonGroup size="sm" spacing={2}>
-          <Button variant="outline" colorScheme="gray">
+          <Button
+            variant="outline"
+            colorScheme="gray"
+            onClick={() => setCurrentPage(currentPage - 1)}
+            isDisabled={currentPage === 1}
+          >
             <Icon as={FaChevronLeft} />
           </Button>
-          <Button variant="outline" colorScheme="gray">
+          <Button
+            variant="outline"
+            colorScheme="gray"
+            onClick={() => setCurrentPage(currentPage + 1)}
+            isDisabled={currentPage * 15 >= totalUsers}
+          >
             <Icon as={FaChevronRight} />
           </Button>
         </ButtonGroup>

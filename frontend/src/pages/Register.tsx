@@ -52,18 +52,44 @@ const Register: React.FC = () => {
     }
     setLoading(true);
     try {
+      console.log('Attempting to register user...');
       const res = await registerUser({
         email: form.email,
         username: form.username,
         password: form.password,
         full_name: form.full_name || form.username,
       });
+      console.log('Registration response:', res);
       const { access_token, refresh_token } = res.data;
-      Cookies.set('access_token', access_token, { expires: 7 });
-      Cookies.set('refresh_token', refresh_token, { expires: 7 });
-      toast({ title: 'Registration successful!', status: 'success', duration: 2000, isClosable: true });
-      navigate('/');
+      
+      // Update cookie settings
+      console.log('Setting cookies...');
+      Cookies.set('access_token', access_token, { 
+        expires: 7,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      Cookies.set('refresh_token', refresh_token, { 
+        expires: 7,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      console.log('Cookies set, showing success toast...');
+      toast({ 
+        title: 'Registration successful!', 
+        status: 'success', 
+        duration: 2000, 
+        isClosable: true,
+        onCloseComplete: () => {
+          console.log('Toast closed, navigating to home...');
+          navigate('/', { replace: true });
+        }
+      });
     } catch (err: any) {
+      console.error('Registration error:', err);
       const msg = err?.response?.data?.detail || 'Registration failed';
       toast({ title: 'Error', description: msg, status: 'error', duration: 4000, isClosable: true });
       if (typeof msg === 'string' && msg.toLowerCase().includes('email')) {

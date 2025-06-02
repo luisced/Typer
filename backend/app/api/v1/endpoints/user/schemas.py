@@ -57,3 +57,18 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     sub: str
     exp: datetime 
+
+class LeaderboardUser(BaseModel):
+    id: str
+    rank: int
+    name: str
+    badges: List[str]
+    wpm: float
+    accuracy: float
+    raw: float
+    consistency: float
+    date: str
+    time: str
+
+    class Config:
+        from_attributes = True 

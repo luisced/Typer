@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from app.api.v1.endpoints.user import models, schemas, repository
 from app.core.security import verify_password, create_access_token, create_refresh_token
 from datetime import datetime, timedelta, UTC
-import uuid
+from fastapi import HTTPException, status   
 from jose import jwt, JWTError
 from app.core.config import settings
+from app.api.v1.endpoints.user.repository import UserRepository
 
 class UserService:
     def __init__(self, db: Session):
-        self.repository = repository.UserRepository(db)
+        self.repository = UserRepository(db)
         self.db = db
 
     def authenticate(self, username: str, password: str) -> Optional[models.User]:
@@ -25,17 +26,24 @@ class UserService:
             return None
         return user
 
-    def create_user(self, user: schemas.UserCreate) -> models.User:
+    def create_user(self, user_in: schemas.UserCreate) -> models.User:
+        """
+        Create a new user.  If email/username is taken, raise ValueError.
+        Otherwise return the newly created User model.
+        """
         try:
-            # Create user with appropriate role and superuser status
-            db_user = self.repository.create(user)
+            db_user = self.repository.create(user_in)
             return db_user
+
         except ValueError as e:
-            # Re-raise ValueError with a more descriptive message
             raise ValueError(str(e))
+
         except Exception as e:
-            # Log the unexpected error and raise a generic error
-            raise ValueError("An unexpected error occurred while creating the user")
+           
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error while creating user"
+            )
 
     def get_user(self, user_id: str) -> Optional[models.User]:
         return self.repository.get_by_id(user_id)
@@ -122,4 +130,58 @@ class UserService:
             # Create new tokens
             return self.create_tokens(user)
         except JWTError:
-            raise ValueError("Invalid refresh token") 
+            raise ValueError("Invalid refresh token")
+
+    def get_leaderboard(self, time_mode: str, period: str, limit: int, offset: int) -> List[schemas.LeaderboardUser]:
+        """
+        Get leaderboard data with user statistics.
+        
+        Args:
+            time_mode: The time mode for the test (e.g., "15", "60")
+            period: The time period for the leaderboard (e.g., "all-time", "weekly", "daily")
+            limit: Number of results to return
+            offset: Number of results to skip
+            
+        Returns:
+            List of users with their leaderboard statistics
+        """
+        users_with_stats = self.repository.get_users_with_stats(time_mode, period, limit, offset)
+        
+        leaderboard_users = []
+        for i, (user, avg_wpm, avg_accuracy, avg_raw_wpm, avg_consistency, last_test_date, rank_percentile) in enumerate(users_with_stats, start=1):
+            # Calculate rank based on percentile
+            rank = int(rank_percentile * 100) if rank_percentile is not None else i
+            
+            # Format date and time
+            if last_test_date:
+                date = last_test_date.strftime("%Y-%m-%d")
+                time = last_test_date.strftime("%H:%M")
+            else:
+                date = "N/A"
+                time = "N/A"
+            
+            # Get user badges (you can implement your own badge logic here)
+            badges = []
+            if avg_wpm and avg_wpm > 100:
+                badges.append("speedster")
+            if avg_accuracy and avg_accuracy > 98:
+                badges.append("accurate")
+            if avg_consistency and avg_consistency > 95:
+                badges.append("consistent")
+            
+            leaderboard_users.append(
+                schemas.LeaderboardUser(
+                    id=user.id,
+                    rank=rank,
+                    name=user.username,
+                    badges=badges,
+                    wpm=float(avg_wpm) if avg_wpm else 0,
+                    accuracy=float(avg_accuracy) if avg_accuracy else 0,
+                    raw=float(avg_raw_wpm) if avg_raw_wpm else 0,
+                    consistency=float(avg_consistency) if avg_consistency else 0,
+                    date=date,
+                    time=time
+                )
+            )
+        
+        return leaderboard_users 

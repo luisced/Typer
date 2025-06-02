@@ -1,9 +1,9 @@
 import React from 'react';
 import { Avatar, AvatarBadge } from '@chakra-ui/react';
-import type { User } from '../../data/mockData';
+import type { LeaderboardUser } from '../../utils/api';
 
 interface UserAvatarProps {
-  user: User;
+  user: LeaderboardUser;
 }
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
