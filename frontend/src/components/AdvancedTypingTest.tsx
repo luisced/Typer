@@ -18,6 +18,7 @@ import {
 import Stats from './Stats'
 import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
+import type { CustomizationConfig } from '../store/customizationStore'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
@@ -60,6 +61,7 @@ interface AdvancedTypingTestProps {
   setTimer: (t: number) => void;
   setWrittenWords: (n: number) => void;
   setTotalWords: (n: number) => void;
+  customization: CustomizationConfig;
 }
 
 const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
@@ -79,6 +81,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   setTimer,
   setWrittenWords,
   setTotalWords,
+  customization,
 }) => {
   // Typing test state
   const [text, setText] = useState<string>('')
@@ -307,9 +310,15 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     return text.split('').map((char, idx) => {
       let color = 'gray.600'
       let fontWeight: 'normal' | 'bold' = 'normal'
+      let bg = 'transparent'
       if (userInput[idx]) {
         color = userInput[idx] === char ? 'white' : 'red.400'
         fontWeight = 'bold'
+        if (customization.charFill && userInput[idx] === char) {
+          bg = 'transparent'
+        } else if (customization.charFill && userInput[idx] !== char) {
+          bg = 'red.900'
+        }
       }
       if (idx === userInput.length) {
         fontWeight = 'bold'
@@ -322,25 +331,56 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           data-index={idx}
           color={color}
           fontWeight={fontWeight}
-          fontSize={{ base: '2xl', md: '3xl' }}
+          fontSize={{ base: customization.fontSize || '2xl', md: customization.fontSize || '3xl' }}
+          fontFamily={customization.font || 'mono'}
+          bg={bg}
           position="relative"
-          transition="color 0.1s"
+          transition="color 0.1s, background 0.1s"
         >
           {char}
           {/* Cursor: only on the current character */}
           {idx === userInput.length && (
-            <Box
-            as="span"
-            w="2px"
-            h="1.2em"
-            bg="yellow.300"
-            position="absolute"
-            left={0}
-            top={0}
-            animation={!isActive ? 'blink 1s step-end infinite' : 'none'}
-            transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
-            willChange="left, top"
-          />
+            customization.cursor === 'bar' ? (
+              <Box
+                as="span"
+                w="2px"
+                h="1.2em"
+                bg="yellow.300"
+                position="absolute"
+                left={0}
+                top={0}
+                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
+                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
+                willChange="left, top"
+              />
+            ) : customization.cursor === 'underscore' ? (
+              <Box
+                as="span"
+                w="1em"
+                h="2px"
+                bg="yellow.300"
+                position="absolute"
+                left={0}
+                bottom={-2}
+                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
+                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
+                willChange="left, top"
+              />
+            ) : customization.cursor === 'block' ? (
+              <Box
+                as="span"
+                w="0.65em"
+                h="1.2em"
+                bg="yellow.300"
+                opacity={0.5}
+                position="absolute"
+                left={0}
+                top={0}
+                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
+                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
+                willChange="left, top"
+              />
+            ) : null
           )}
         </Text>
       )
@@ -368,7 +408,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   }, [userInput, text, setWrittenWords, setTotalWords]);
 
   return (
-    <Flex direction="column"  bg="gray.900" align="center" justify="center" px={2}>
+    <Flex direction="column"  bg="transparent" align="center" justify="center" px={2}>
 
       {/* Text Display Area */}
       <Flex
@@ -392,8 +432,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         {(modes.includes('words') || modes.includes('time')) && (
           <Box
             ref={textContainerRef}
-            fontFamily="mono"
-            fontSize={{ base: '2xl', md: '3xl' }}
+            fontFamily={customization.font || 'mono'}
+            fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
             color="gray.600"
             textAlign="left"
             width="100%"
@@ -407,6 +447,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
             userSelect="none"
             whiteSpace="pre-wrap"
             wordBreak="break-word"
+            bg="transparent"
             sx={{
               scrollbarWidth: 'none', // Firefox
               msOverflowStyle: 'none', // IE/Edge
@@ -530,3 +571,4 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 }
 
 export default AdvancedTypingTest
+ 
