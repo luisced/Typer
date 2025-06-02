@@ -4,6 +4,8 @@ from app.api.v1.endpoints.user import models, schemas, repository
 from app.core.security import verify_password, create_access_token, create_refresh_token
 from datetime import datetime, timedelta, UTC
 import uuid
+from jose import jwt, JWTError
+from app.core.config import settings
 
 class UserService:
     def __init__(self, db: Session):
@@ -102,4 +104,22 @@ class UserService:
         
     def is_admin(self, user_id: str) -> bool:
         roles = self.get_user_roles(user_id)
-        return models.RoleType.ADMIN in roles 
+        return models.RoleType.ADMIN in roles
+
+    def refresh_token(self, refresh_token: str) -> dict:
+        try:
+            # Decode the refresh token
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                raise ValueError("Invalid refresh token")
+            
+            # Get the user
+            user = self.get_user(user_id)
+            if not user:
+                raise ValueError("User not found")
+                
+            # Create new tokens
+            return self.create_tokens(user)
+        except JWTError:
+            raise ValueError("Invalid refresh token") 

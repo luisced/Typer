@@ -5,6 +5,8 @@ from app.db.session import get_db
 from app.api.v1.endpoints.user import schemas, service, models
 from app.core.deps import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import jwt, JWTError
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -137,4 +139,19 @@ def admin_remove_role(
             detail="Not enough permissions"
         )
     user_service.remove_role(user_id, role_type)
-    return {"message": f"Role {role_type.value} removed successfully from user {user_id}"} 
+    return {"message": f"Role {role_type.value} removed successfully from user {user_id}"}
+
+@router.post("/refresh", response_model=schemas.Token)
+def refresh_token(
+    refresh_token: str,
+    db: Session = Depends(get_db)
+):
+    user_service = service.UserService(db)
+    try:
+        return user_service.refresh_token(refresh_token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) 
