@@ -1,6 +1,6 @@
 import { Box, Flex, Avatar, Text, Progress } from '@chakra-ui/react'
 
-const ProfileCard = () => (
+const ProfileCard = ({ user }: { user?: any }) => (
   <Box
     bg="gray.800"
     borderRadius="lg"
@@ -12,12 +12,15 @@ const ProfileCard = () => (
     <Flex align="center" gap={8}>
       {/* Avatar and user info */}
       <Flex direction="column" align="center" minW="180px">
-        <Avatar size="2xl" name="luisced" />
+        <Avatar size="2xl" name={user?.username || 'User'} />
         <Text fontSize="3xl" fontWeight="bold" color="gray.100" mt={2} letterSpacing={2} fontFamily="mono">
-          luisced
+          {user?.username || 'Username'}
         </Text>
         <Text color="gray.500" fontSize="sm" mt={-1} mb={2}>
-          Joined 01 Jun 2025
+          {user?.email || 'Email'}
+        </Text>
+        <Text color="gray.500" fontSize="sm" mt={-1} mb={2}>
+          Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
         </Text>
         <Flex align="center" w="100%" gap={2}>
           <Text color="gray.400" fontSize="md">1</Text>

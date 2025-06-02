@@ -1,14 +1,17 @@
-import { useState } from 'react'
-import { Box, Flex } from '@chakra-ui/react'
+import { useState, useEffect } from 'react'
+import { Box, Flex, Heading, Text, Spinner, VStack, Alert, AlertIcon, Button } from '@chakra-ui/react'
 import OptionBar from '../components/OptionBar'
 import Stats from '../components/Stats'
 import AdvancedTypingTest from '../components/AdvancedTypingTest'
 import { useCustomizationStore } from '../store/customizationStore'
+import { getCurrentUser } from '../utils/api'
+import Cookies from 'js-cookie'
+import { useNavigate } from 'react-router-dom'
 
 const DEFAULT_TIME = 15
 const DEFAULT_WORDS = 10
 
-const Home = () => {
+const Home: React.FC = () => {
   const [modes, setModes] = useState<string[]>(['words'])
   const [subOptions, setSubOptions] = useState<{ time: number; words: number }>({
     time: DEFAULT_TIME,
@@ -22,8 +25,34 @@ const Home = () => {
   const [timer, setTimer] = useState(DEFAULT_TIME)
   const [writtenWords, setWrittenWords] = useState(0)
   const [totalWords, setTotalWords] = useState(0)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const { config: customization } = useCustomizationStore()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await getCurrentUser()
+        setUser(res.data)
+      } catch (err: any) {
+        setError(err?.response?.data?.detail || 'Could not fetch user data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUser()
+  }, [])
+
+  const handleSignOut = () => {
+    Cookies.remove('access_token')
+    Cookies.remove('refresh_token')
+    navigate('/login')
+  }
 
   return (
     <Flex direction="column" bg="transparent" align="center" justify="flex-start" px={2}>

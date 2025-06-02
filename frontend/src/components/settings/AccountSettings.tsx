@@ -3,9 +3,9 @@ import ProfileCard from '../ProfileCard'
 import StatCards from '../StatCards'
 import BadgesSection from '../BadgesSection'
 
-const AccountSettings = () => (
+const AccountSettings = ({ user }: { user?: any }) => (
   <Flex direction="column" gap={6}>
-    <ProfileCard />
+    <ProfileCard user={user} />
     <StatCards />
     <BadgesSection />
   </Flex>
