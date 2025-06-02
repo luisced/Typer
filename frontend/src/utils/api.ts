@@ -29,6 +29,17 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Add a response interceptor to handle 401 Unauthorized globally
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+)
+
 export async function registerUser(data: { email: string; username: string; password: string; full_name?: string }) {
   return api.post('/users/register', data)
 }
