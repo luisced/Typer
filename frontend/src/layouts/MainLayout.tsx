@@ -1,10 +1,29 @@
 import { Box, Container, Flex, Link as ChakraLink, Avatar, AvatarGroup, Text, Icon, useColorModeValue } from '@chakra-ui/react'
 import { Outlet, Link as RouterLink } from 'react-router-dom'
 import { FaKeyboard, FaTrophy, FaUserCircle } from 'react-icons/fa'
+import { useEffect, useState } from 'react'
+import { getCurrentUser } from '../utils/api'
 
 const MainLayout = () => {
   const navBg = useColorModeValue('rgba(255,255,255,0.85)', 'rgba(31,41,55,0.85)')
   const navBorder = useColorModeValue('gray.200', 'gray.700')
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await getCurrentUser()
+        setUser(res.data)
+      } catch (err) {
+        console.error('Error fetching user:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUser()
+  }, [])
+
   return (
     <Flex minH="100vh" direction="column">
       <Box
@@ -67,7 +86,7 @@ const MainLayout = () => {
                 transition="all 0.2s"
               >
                 <Icon as={FaUserCircle} boxSize={5} />
-                <Text>luisced</Text>
+                <Text>{loading ? '...' : user?.username || 'Guest'}</Text>
               </ChakraLink>
             </Flex>
           </Flex>

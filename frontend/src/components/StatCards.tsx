@@ -1,19 +1,36 @@
 import { SimpleGrid, Box, Text, Icon, useColorModeValue } from '@chakra-ui/react'
 import { FaTrophy, FaClock, FaKeyboard, FaChartLine } from 'react-icons/fa'
-
-const stats = [
-  { title: 'Best WPM', value: '120', icon: FaTrophy },
-  { title: 'Average WPM', value: '95', icon: FaChartLine },
-  { title: 'Tests Taken', value: '150', icon: FaKeyboard },
-  { title: 'Time Typing', value: '5h 30m', icon: FaClock },
-]
+import { useTests } from '../hooks/useTests'
 
 const StatCards = () => {
-  // Use a slightly lighter dark for the card background
+  const { tests, isLoading } = useTests()
   const cardBg = useColorModeValue('gray.700', 'gray.700')
+
+  // Calculate stats from test history
+  const stats = {
+    bestWpm: tests?.length ? Math.max(...tests.map(t => t.wpm)) : 0,
+    avgWpm: tests?.length ? Math.round(tests.reduce((acc, t) => acc + t.wpm, 0) / tests.length) : 0,
+    testsTaken: tests?.length || 0,
+    timeTyping: tests?.length ? tests.reduce((acc, t) => acc + t.duration, 0) : 0
+  }
+
+  // Format time typing into hours and minutes
+  const formatTimeTyping = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return `${hours}h ${minutes}m`
+  }
+
+  const statItems = [
+    { title: 'Best WPM', value: stats.bestWpm.toString(), icon: FaTrophy },
+    { title: 'Average WPM', value: stats.avgWpm.toString(), icon: FaChartLine },
+    { title: 'Tests Taken', value: stats.testsTaken.toString(), icon: FaKeyboard },
+    { title: 'Time Typing', value: formatTimeTyping(stats.timeTyping), icon: FaClock },
+  ]
+
   return (
     <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={8}>
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <Box
           key={index}
           bg={cardBg}

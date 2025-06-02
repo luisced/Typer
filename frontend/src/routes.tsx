@@ -7,6 +7,7 @@ import Scoreboard from './pages/Scoreboard'
 import Register from './pages/Register'
 import Login from './pages/Login'
 import { useState } from 'react'
+import { TypingTestResults } from './components/TypingTestResults'
 
 const AppRoutes = () => {
   const [model, setModel] = useState('gemini')
@@ -20,6 +21,7 @@ const AppRoutes = () => {
         <Route path="/scoreboard" element={<Scoreboard />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/results" element={<TypingTestResults />} />
       </Route>
     </Routes>
   )

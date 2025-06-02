@@ -19,6 +19,7 @@ import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
 import type { CustomizationConfig } from '../store/customizationStore'
 import { saveTest } from '../api/tests'
+import { useNavigate } from 'react-router-dom'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
@@ -105,6 +106,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   const [keystrokes, setKeystrokes] = useState<number[]>([])
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const toast = useToast()
+  const navigate = useNavigate()
 
   // Ref for the text container
   const textContainerRef = useRef<HTMLDivElement>(null)
@@ -344,14 +346,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     const consistencyScore = calculateConsistency(keystrokes)
 
     try {
-      await saveTest({
+      const saved = await saveTest({
         wpm,
         raw_wpm: rawWpm,
         accuracy,
         consistency: consistencyScore,
         test_type: modes.join(','),
         duration: finalDuration,
-        char_logs: [], // TODO: Implement character-level logging
+        char_logs: [],
         timestamp: new Date().toISOString(),
         chars: {
           correct,
@@ -361,7 +363,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         },
         restarts
       })
-      setShowResults(true)
+      navigate('/results', { state: { latestTest: saved } })
     } catch (error) {
       toast({
         title: 'Error saving test results',
@@ -647,46 +649,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           />
         </Flex>
       )}
-
-      {/* Results Popup */}
-      <Modal isOpen={showResults} onClose={() => setShowResults(false)} isCentered>
-        <ModalOverlay />
-        <ModalContent
-          bg="gray.800"
-          color="gray.100"
-          borderRadius="lg"
-          border="1px solid"
-          borderColor="gray.600"
-        >
-          <ModalHeader textAlign="center">TEST COMPLETE!</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text fontSize="xl" mb={2}>
-              WPM: <b>{wpm}</b>
-            </Text>
-            <Text fontSize="xl" mb={2}>
-              Raw WPM: <b>{Math.round((userInput.length / 5) / (duration / 60) * 100) / 100}</b>
-            </Text>
-            <Text fontSize="xl" mb={2}>
-              Accuracy: <b>{accuracy}%</b>
-            </Text>
-            <Text fontSize="xl" mb={2}>
-              Consistency: <b>{calculateConsistency(keystrokes).toFixed(1)}%</b>
-            </Text>
-            <Text fontSize="xl" mb={2}>
-              Characters: <b>{charStats.correct}/{charStats.incorrect}/{charStats.extra}/{charStats.missed}</b>
-            </Text>
-            <Text fontSize="xl" mb={2}>
-              Restarts: <b>{restarts}</b>
-            </Text>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="yellow" onClick={handleReset} fontWeight="bold">
-              Try Another Text
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Flex>
   )
 }
