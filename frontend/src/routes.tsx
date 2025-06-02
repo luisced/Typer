@@ -5,6 +5,7 @@ import Test from './pages/Test'
 import Profile from './pages/Profile'
 import TypingTest from './components/TypingTest'
 import SettingsCard from './components/SettingsCard'
+import Scoreboard from './pages/Scoreboard'
 import { useState } from 'react'
 
 const AppRoutes = () => {
@@ -17,6 +18,7 @@ const AppRoutes = () => {
         <Route path="/test" element={<TypingTest />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<SettingsCard model={model} setModel={setModel} apiKey={apiKey} setApiKey={setApiKey} />} />
+        <Route path="/scoreboard" element={<Scoreboard />} />
       </Route>
     </Routes>
   )
