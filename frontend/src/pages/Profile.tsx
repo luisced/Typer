@@ -1,16 +1,19 @@
-import { Box, Heading, Text, Stack, Button } from '@chakra-ui/react'
+import { Flex } from '@chakra-ui/react'
+import ProfileCard from '../components/ProfileCard'
+import StatCards from '../components/StatCards'
+import BadgesSection from '../components/BadgesSection'
+import SettingsSidebar from '../components/SettingsSidebar'
 
 const Profile = () => {
   return (
-    <Stack spacing={6}>
-      <Heading as="h1" size="xl">
-        Profile
-      </Heading>
-      <Box>
-        <Text mb={4}>Please log in to view your profile.</Text>
-        <Button colorScheme="blue">Log In</Button>
-      </Box>
-    </Stack>
+    <Flex gap={6}>
+      <SettingsSidebar />
+      <Flex direction="column" gap={6} flex="1">
+        <ProfileCard />
+        <StatCards />
+        <BadgesSection />
+      </Flex>
+    </Flex>
   )
 }
 

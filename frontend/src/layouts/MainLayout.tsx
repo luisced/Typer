@@ -1,4 +1,4 @@
-import { Box, Container, Flex, Link as ChakraLink } from '@chakra-ui/react'
+import { Box, Container, Flex, Link as ChakraLink, Avatar, AvatarGroup, Text } from '@chakra-ui/react'
 import { Outlet, Link as RouterLink } from 'react-router-dom'
 
 const MainLayout = () => {
@@ -11,11 +11,12 @@ const MainLayout = () => {
               Typer
             </ChakraLink>
             <Flex gap={4}>
-              <ChakraLink as={RouterLink} to="/test" _hover={{ textDecoration: 'none' }}>
-                Test
-              </ChakraLink>
+
               <ChakraLink as={RouterLink} to="/profile" _hover={{ textDecoration: 'none' }}>
-                Profile
+              <AvatarGroup>
+                <Avatar />
+              </AvatarGroup>
+              <Text>luisced</Text>
               </ChakraLink>
             </Flex>
           </Flex>
