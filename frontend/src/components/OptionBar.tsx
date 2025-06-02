@@ -22,12 +22,12 @@ const languageOptions = ['English', 'Spanish', 'French', 'German']
 const codeLanguages = ['Python', 'JavaScript']
 
 const OptionBar = ({
-  modes, setModes, subOption, setSubOption, language, setLanguage, codeLanguage, setCodeLanguage
+  modes, setModes, subOptions, setSubOptions, language, setLanguage, codeLanguage, setCodeLanguage
 }: {
   modes: string[]
   setModes: (m: string[]) => void
-  subOption: number | null
-  setSubOption: (n: number) => void
+  subOptions: { time: number, words: number }
+  setSubOptions: (opts: { time: number, words: number }) => void
   language: string
   setLanguage: (l: string) => void
   codeLanguage: string
@@ -45,7 +45,11 @@ const OptionBar = ({
     } else {
       // Mixable modes can be toggled
       if (modes.includes(mode)) {
-        // Remove the mode
+        // Prevent both 'words' and 'time' from being deselected
+        if ((mode === 'words' && !modes.includes('time')) || (mode === 'time' && !modes.includes('words'))) {
+          // Do not allow deselecting the last one
+          return
+        }
         setModes(modes.filter(m => m !== mode))
       } else {
         // Add the mode, but remove any exclusive modes first
@@ -78,8 +82,8 @@ const OptionBar = ({
           variant="ghost"
           color={modes.includes(opt.key) ? activeColor : inactiveColor}
           fontWeight={modes.includes(opt.key) ? 'bold' : 'normal'}
-          _hover={{ color: activeColor, bg: 'gray.700' }}
-          _active={{ bg: 'gray.700' }}
+          _hover={{ color: activeColor, borderColor: 'transparent' }}
+          _active={{ color: activeColor, borderColor: 'transparent' }}
           px={3}
           py={1}
           fontSize="md"
@@ -97,10 +101,10 @@ const OptionBar = ({
             {timeOptions.map(t => (
               <Button
                 key={t}
-                onClick={() => setSubOption(t)}
+                onClick={() => setSubOptions({ ...subOptions, time: t })}
                 variant="ghost"
-                color={subOption === t ? activeColor : subInactive}
-                fontWeight={subOption === t ? 'bold' : 'normal'}
+                color={subOptions.time === t ? activeColor : subInactive}
+                fontWeight={subOptions.time === t ? 'bold' : 'normal'}
                 fontSize="md"
                 px={2}
                 py={1}
@@ -116,10 +120,10 @@ const OptionBar = ({
             {wordOptions.map(w => (
               <Button
                 key={w}
-                onClick={() => setSubOption(w)}
+                onClick={() => setSubOptions({ ...subOptions, words: w })}
                 variant="ghost"
-                color={subOption === w ? activeColor : subInactive}
-                fontWeight={subOption === w ? 'bold' : 'normal'}
+                color={subOptions.words === w ? activeColor : subInactive}
+                fontWeight={subOptions.words === w ? 'bold' : 'normal'}
                 fontSize="md"
                 px={2}
                 py={1}

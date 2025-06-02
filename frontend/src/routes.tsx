@@ -6,7 +6,6 @@ import Profile from './pages/Profile'
 import TypingTest from './components/TypingTest'
 import SettingsCard from './components/SettingsCard'
 import { useState } from 'react'
-import AdvancedTypingTest from './components/AdvancedTypingTest'
 
 const AppRoutes = () => {
   const [model, setModel] = useState('gemini')
@@ -14,7 +13,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route element={<MainLayout />}>
-        <Route path="/" element={<AdvancedTypingTest />} />
+        <Route path="/" element={<Home />} />
         <Route path="/test" element={<TypingTest />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<SettingsCard model={model} setModel={setModel} apiKey={apiKey} setApiKey={setApiKey} />} />
