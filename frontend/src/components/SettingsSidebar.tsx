@@ -2,13 +2,15 @@ import { useState } from 'react'
 import {
   Box, Flex, Text, Icon, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, useDisclosure, Button, Input, FormControl, FormLabel, VStack
 } from '@chakra-ui/react'
-import { FaUser, FaKey, FaExclamationTriangle, FaShieldAlt, FaGoogle, FaGithub, FaLock, FaSignOutAlt, FaPlug } from 'react-icons/fa'
+import { FaUser, FaKey, FaExclamationTriangle, FaShieldAlt, FaGoogle, FaGithub, FaLock, FaSignOutAlt, FaPlug, FaRobot, FaPaintBrush } from 'react-icons/fa'
 
 const options = [
   { key: 'account', label: 'account', icon: FaUser, active: true },
   { key: 'authentication', label: 'authentication', icon: FaKey, active: true },
   { key: 'danger', label: 'danger zone', icon: FaExclamationTriangle, active: true },
-  { key: 'admin', label: 'admin', icon: FaShieldAlt, active: false },
+  { key: 'admin', label: 'admin', icon: FaShieldAlt, active: true },
+  { key: 'ai', label: 'ai', icon: FaRobot, active: true },
+  { key: 'customization', label: 'customization', icon: FaPaintBrush, active: true },
 ]
 
 const SettingsSidebar = ({ selected, setSelected }: { selected: string, setSelected: (key: string) => void }) => {

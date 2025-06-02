@@ -3,6 +3,7 @@ import { Box, Flex } from '@chakra-ui/react'
 import OptionBar from '../components/OptionBar'
 import Stats from '../components/Stats'
 import AdvancedTypingTest from '../components/AdvancedTypingTest'
+import { useCustomizationStore } from '../store/customizationStore'
 
 const DEFAULT_TIME = 15
 const DEFAULT_WORDS = 10
@@ -21,6 +22,8 @@ const Home = () => {
   const [timer, setTimer] = useState(DEFAULT_TIME)
   const [writtenWords, setWrittenWords] = useState(0)
   const [totalWords, setTotalWords] = useState(0)
+
+  const { config: customization } = useCustomizationStore()
 
   return (
     <Flex direction="column" bg="gray.900" align="center" justify="flex-start" px={2}>
@@ -54,6 +57,7 @@ const Home = () => {
             setTimer={setTimer}
             setWrittenWords={setWrittenWords}
             setTotalWords={setTotalWords}
+            customization={customization}
           />
         </Flex>
       </Box>
