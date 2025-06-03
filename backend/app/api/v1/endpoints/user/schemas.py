@@ -78,7 +78,7 @@ class UserCustomizationBase(BaseModel):
     accent: str = "#3182ce"
     cursor: str = "bar"
     cursor_blink: bool = True
-    char_fill: bool = False
+    char_fill: str = "solid"
     sounds: bool = True
     sound_set: str = "classic"
     volume: int = 50
@@ -98,7 +98,7 @@ class UserCustomizationUpdate(UserCustomizationBase):
     accent: Optional[str] = None
     cursor: Optional[str] = None
     cursor_blink: Optional[bool] = None
-    char_fill: Optional[bool] = None
+    char_fill: Optional[str] = None
     sounds: Optional[bool] = None
     sound_set: Optional[str] = None
     volume: Optional[int] = None

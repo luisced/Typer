@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from jose import jwt, JWTError
 from app.core.config import settings
 from app.api.v1.endpoints.user.repository import UserRepository
+import uuid
 
 class UserService:
     def __init__(self, db: Session):
@@ -197,6 +198,7 @@ class UserService:
         if not customization:
             # Create default customization if none exists
             customization = models.UserCustomization(
+                id=str(uuid.uuid4()),  # Explicitly set the ID
                 user_id=user_id,
                 theme="dark",
                 accent="blue",

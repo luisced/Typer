@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Enum, Tabl
 from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 import enum
+import uuid
 from app.db.base import Base
 from app.core.security import verify_password
 
@@ -97,7 +98,7 @@ class UserProfile(Base):
 class UserCustomization(Base):
     __tablename__ = "user_customizations"
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     
     # Theme settings
@@ -107,7 +108,7 @@ class UserCustomization(Base):
     # Cursor settings
     cursor = Column(String, default="bar")
     cursor_blink = Column(Boolean, default=True)
-    char_fill = Column(Boolean, default=False)
+    char_fill = Column(String, default="solid")
     
     # Sound settings
     sounds = Column(Boolean, default=True)
