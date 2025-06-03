@@ -1,7 +1,7 @@
 from typing import Optional, List, Set
 from sqlalchemy.orm import Session
 from app.api.v1.endpoints.user import models, schemas, repository
-from app.core.security import verify_password, create_access_token, create_refresh_token
+from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
 from datetime import datetime, timedelta, UTC
 from fastapi import HTTPException, status   
 from jose import jwt, JWTError
@@ -187,3 +187,53 @@ class UserService:
             )
         
         return leaderboard_users 
+
+    def get_user_customization(self, user_id: int) -> models.UserCustomization:
+        """Get user customization settings."""
+        customization = self.db.query(models.UserCustomization).filter(
+            models.UserCustomization.user_id == user_id
+        ).first()
+        
+        if not customization:
+            # Create default customization if none exists
+            customization = models.UserCustomization(
+                user_id=user_id,
+                theme="dark",
+                accent="blue",
+                cursor="block",
+                cursor_blink=True,
+                char_fill="solid",
+                sounds=True,
+                sound_set="mechanical",
+                volume=0.5,
+                font="mono",
+                font_size=16,
+                key_highlight=True,
+                on_screen_keyboard=False,
+                animations=True,
+                show_stats=True,
+                show_progress=True
+            )
+            self.db.add(customization)
+            self.db.commit()
+            self.db.refresh(customization)
+        
+        return customization
+
+    def update_user_customization(
+        self, 
+        user_id: int, 
+        customization: schemas.UserCustomizationUpdate
+    ) -> models.UserCustomization:
+        """Update user customization settings."""
+        db_customization = self.get_user_customization(user_id)
+        
+        # Update only the fields that are provided
+        for field, value in customization.dict(exclude_unset=True).items():
+            setattr(db_customization, field, value)
+        
+        db_customization.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(db_customization)
+        
+        return db_customization 

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Enum, Table
+from sqlalchemy import Boolean, Column, String, DateTime, ForeignKey, Enum, Table, Integer, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 import enum
@@ -56,6 +56,9 @@ class User(Base):
     # Role related fields
     roles = relationship("Role", secondary=user_roles, lazy="joined")
 
+    # Customization related fields
+    customization = relationship("UserCustomization", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
     def verify_password(self, password: str) -> bool:
         """Verify the password against the hashed password."""
         if not self.hashed_password:
@@ -89,4 +92,40 @@ class UserProfile(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
-    user = relationship("User", back_populates="profile") 
+    user = relationship("User", back_populates="profile")
+
+class UserCustomization(Base):
+    __tablename__ = "user_customizations"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    # Theme settings
+    theme = Column(String, default="system")
+    accent = Column(String, default="#3182ce")
+    
+    # Cursor settings
+    cursor = Column(String, default="bar")
+    cursor_blink = Column(Boolean, default=True)
+    char_fill = Column(Boolean, default=False)
+    
+    # Sound settings
+    sounds = Column(Boolean, default=True)
+    sound_set = Column(String, default="classic")
+    volume = Column(Integer, default=50)
+    
+    # Font settings
+    font = Column(String, default="monospace")
+    font_size = Column(Integer, default=18)
+    
+    # Display settings
+    key_highlight = Column(Boolean, default=False)
+    on_screen_keyboard = Column(Boolean, default=False)
+    animations = Column(Boolean, default=True)
+    show_stats = Column(Boolean, default=True)
+    show_progress = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+
+    user = relationship("User", back_populates="customization") 

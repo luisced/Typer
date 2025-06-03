@@ -37,8 +37,10 @@ api.interceptors.response.use(
 
       try {
         // Try to refresh the token
-        const response = await axios.post(`${API_URL}/users/refresh`, {
-          refresh_token: Cookies.get('refresh_token')
+        const params = new URLSearchParams();
+        params.append('refresh_token', Cookies.get('refresh_token') || '');
+        const response = await axios.post(`${API_URL}/users/refresh`, params, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
         const { access_token, refresh_token } = response.data;

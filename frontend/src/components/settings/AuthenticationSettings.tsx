@@ -187,15 +187,17 @@ const AuthenticationSettings = () => {
         </ModalContent>
       </Modal>
       {/* Sign Out Button */}
-      <Button colorScheme="red" mt={8} w="full" onClick={() => {
-        import('js-cookie').then(Cookies => {
-          Cookies.default.remove('access_token');
-          Cookies.default.remove('refresh_token');
-          window.location.href = '/login';
-        });
-      }}>
-        Sign Out
-      </Button>
+      <Flex justify="flex-end" mt={8}>
+        <Button colorScheme="red" w="190px" onClick={() => {
+          import('js-cookie').then(Cookies => {
+            Cookies.default.remove('access_token');
+            Cookies.default.remove('refresh_token');
+            window.location.href = '/login';
+          });
+        }}>
+          Sign Out
+        </Button>
+      </Flex>
     </Box>
   )
 }

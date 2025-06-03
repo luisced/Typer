@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Heading,
@@ -13,15 +13,25 @@ import {
   AlertIcon,
   Text,
   Badge,
-  useColorModeValue
+  useColorModeValue,
+  Flex,
+  Button,
+  Select,
+  HStack
 } from '@chakra-ui/react';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useTests } from '../hooks/useTests';
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 export const TestHistory: React.FC = () => {
   const { tests, isLoading, error } = useTests();
   const headerBg = useColorModeValue('gray.700', 'gray.700');
   const rowBg = useColorModeValue('gray.800', 'gray.800');
   const hoverBg = useColorModeValue('gray.750', 'gray.750');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   if (isLoading) {
     return (
@@ -55,6 +65,22 @@ export const TestHistory: React.FC = () => {
     ));
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil((tests?.length || 0) / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTests = tests?.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newItemsPerPage = Number(e.target.value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   return (
     <Box p={4}>
       <Heading mb={6} size="lg">Test History</Heading>
@@ -72,7 +98,7 @@ export const TestHistory: React.FC = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {tests?.map((test) => (
+            {currentTests?.map((test) => (
               <Tr 
                 key={test.id} 
                 bg={rowBg}
@@ -119,6 +145,55 @@ export const TestHistory: React.FC = () => {
           </Tbody>
         </Table>
       </Box>
+
+      {/* Pagination Controls */}
+      <Flex justify="space-between" align="center" mt={4}>
+        <HStack spacing={2}>
+          <Text fontSize="sm" color="gray.400">
+            Items per page:
+          </Text>
+          <Select
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+            size="sm"
+            w="70px"
+            bg="gray.700"
+            color="gray.100"
+          >
+            {ITEMS_PER_PAGE_OPTIONS.map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </Select>
+          <Text fontSize="sm" color="gray.400">
+            {startIndex + 1}-{Math.min(endIndex, tests?.length || 0)} of {tests?.length || 0}
+          </Text>
+        </HStack>
+
+        <HStack spacing={2}>
+          <Button
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            isDisabled={currentPage === 1}
+            leftIcon={<FaChevronLeft />}
+            bg="gray.700"
+            _hover={{ bg: 'gray.600' }}
+          >
+            Previous
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            isDisabled={currentPage === totalPages}
+            rightIcon={<FaChevronRight />}
+            bg="gray.700"
+            _hover={{ bg: 'gray.600' }}
+          >
+            Next
+          </Button>
+        </HStack>
+      </Flex>
     </Box>
   );
 }; 

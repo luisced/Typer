@@ -23,37 +23,62 @@ const SettingsSidebar = ({ selected, setSelected }: { selected: string, setSelec
   }
 
   return (
-    <>
-      <Box bg="gray.800" borderRadius="lg" p={6} boxShadow="lg">
-        <Flex direction="column" gap={3}>
-          {options.map(opt => (
-            <Button
-              key={opt.key}
-              variant="ghost"
-              justifyContent="flex-start"
-              leftIcon={<Icon as={opt.icon} boxSize={5} />}
-              fontWeight={opt.key === selected ? 'bold' : 'normal'}
-              color={opt.key === selected ? 'white' : 'gray.400'}
-              fontFamily="mono"
-              fontSize="xl"
-              _hover={opt.active ? { color: 'white' } : {}}
-              _active={{}}
-              isDisabled={!opt.active}
-              opacity={opt.active ? 1 : 0.5}
-              onClick={() => handleOptionClick(opt.key, opt.active)}
-              px={5}
-              py={2}
-              borderRadius="md"
-              transition="all 0.2s"
-              w="100%"
-            >
-              <Text isTruncated>{opt.label}</Text>
-            </Button>
-          ))}
-        </Flex>
-      </Box>
-
-    </>
+    <Box 
+      position="sticky" 
+      top="20px" 
+      h="calc(100vh - 40px)" 
+      maxH="350px"
+      bg="gray.800" 
+      borderRadius="lg" 
+      p={6} 
+      boxShadow="lg"
+      overflow="hidden"
+      display="flex"
+      flexDirection="column"
+    >
+      <Flex 
+        direction="column" 
+        gap={3}
+        overflowY="auto"
+        sx={{
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'gray.600',
+            borderRadius: '24px',
+          },
+        }}
+      >
+        {options.map(opt => (
+          <Button
+            key={opt.key}
+            variant="ghost"
+            justifyContent="flex-start"
+            leftIcon={<Icon as={opt.icon} boxSize={5} />}
+            fontWeight={opt.key === selected ? 'bold' : 'normal'}
+            color={opt.key === selected ? 'white' : 'gray.400'}
+            fontFamily="mono"
+            fontSize="xl"
+            _hover={opt.active ? { color: 'white' } : {}}
+            _active={{}}
+            isDisabled={!opt.active}
+            opacity={opt.active ? 1 : 0.5}
+            onClick={() => handleOptionClick(opt.key, opt.active)}
+            px={5}
+            py={2}
+            borderRadius="md"
+            transition="all 0.2s"
+            w="100%"
+          >
+            <Text isTruncated>{opt.label}</Text>
+          </Button>
+        ))}
+      </Flex>
+    </Box>
   )
 }
 

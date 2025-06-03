@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.session import get_db
@@ -168,7 +168,7 @@ def admin_remove_role(
 
 @router.post("/refresh", response_model=schemas.Token)
 def refresh_token(
-    refresh_token: str,
+    refresh_token: str = Form(...),
     db: Session = Depends(get_db)
 ):
     user_service = service.UserService(db)
@@ -205,4 +205,23 @@ def get_leaderboard(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching leaderboard data: {str(e)}"
-        ) 
+        )
+
+@router.get("/me/customization", response_model=schemas.UserCustomizationInDB)
+def get_user_customization(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the current user's customization settings."""
+    user_service = service.UserService(db)
+    return user_service.get_user_customization(current_user.id)
+
+@router.put("/me/customization", response_model=schemas.UserCustomizationInDB)
+def update_user_customization(
+    customization: schemas.UserCustomizationUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update the current user's customization settings."""
+    user_service = service.UserService(db)
+    return user_service.update_user_customization(current_user.id, customization) 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { api } from '../api/client'
 
 export type CustomizationConfig = {
   theme: string
@@ -42,11 +43,39 @@ export const useCustomizationStore = create(
     config: CustomizationConfig
     setConfig: (config: Partial<CustomizationConfig>) => void
     resetConfig: () => void
+    syncWithBackend: () => Promise<void>
   }>(
-    (set) => ({
+    (set, get) => ({
       config: defaultConfig,
-      setConfig: (config) => set((state) => ({ config: { ...state.config, ...config } })),
-      resetConfig: () => set({ config: defaultConfig }),
+      setConfig: async (config) => {
+        const newConfig = { ...get().config, ...config }
+        set({ config: newConfig })
+        
+        try {
+          // Sync with backend
+          await api.put('/users/me/customization', newConfig)
+        } catch (error) {
+          console.error('Failed to sync customization with backend:', error)
+        }
+      },
+      resetConfig: async () => {
+        set({ config: defaultConfig })
+        
+        try {
+          // Reset backend settings
+          await api.put('/users/me/customization', defaultConfig)
+        } catch (error) {
+          console.error('Failed to reset customization in backend:', error)
+        }
+      },
+      syncWithBackend: async () => {
+        try {
+          const response = await api.get('/users/me/customization')
+          set({ config: response.data })
+        } catch (error) {
+          console.error('Failed to fetch customization from backend:', error)
+        }
+      }
     }),
     { name: 'customization-config' }
   )

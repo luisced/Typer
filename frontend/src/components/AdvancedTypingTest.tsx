@@ -105,6 +105,12 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   })
   const [keystrokes, setKeystrokes] = useState<number[]>([])
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
+  const [charLogs, setCharLogs] = useState<Record<string, {
+    attempts: number;
+    errors: number;
+    total_time: number;
+    last_attempt_time: number | null;
+  }>>({})
   const toast = useToast()
   const navigate = useNavigate()
 
@@ -258,6 +264,32 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     }
     setLastKeystrokeTime(now)
 
+    // Track character-level statistics
+    const currentChar = text[value.length - 1]
+    if (currentChar) {
+      setCharLogs(prev => {
+        const charLog = prev[currentChar] || {
+          attempts: 0,
+          errors: 0,
+          total_time: 0,
+          last_attempt_time: null
+        }
+        
+        const isCorrect = value[value.length - 1] === currentChar
+        const timeSinceLastAttempt = charLog.last_attempt_time ? now - charLog.last_attempt_time : 0
+        
+        return {
+          ...prev,
+          [currentChar]: {
+            attempts: charLog.attempts + 1,
+            errors: charLog.errors + (isCorrect ? 0 : 1),
+            total_time: charLog.total_time + timeSinceLastAttempt,
+            last_attempt_time: now
+          }
+        }
+      })
+    }
+
     setUserInput(value)
   }
 
@@ -345,6 +377,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     // Calculate consistency
     const consistencyScore = calculateConsistency(keystrokes)
 
+    // Format character logs for API
+    const formattedCharLogs = Object.entries(charLogs).map(([char, stats]) => ({
+      char,
+      attempts: stats.attempts,
+      errors: stats.errors,
+      total_time: stats.total_time
+    }))
+
     try {
       const saved = await saveTest({
         wpm,
@@ -353,7 +393,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         consistency: consistencyScore,
         test_type: modes.join(','),
         duration: finalDuration,
-        char_logs: [],
+        char_logs: formattedCharLogs,
         timestamp: new Date().toISOString(),
         chars: {
           correct,
@@ -412,6 +452,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setFinished(false)
     setKeystrokes([])
     setLastKeystrokeTime(null)
+    setCharLogs({}) // Reset character logs
     // Refocus after a short delay
     setTimeout(() => inputRef.current?.focus(), 100)
     // eslint-disable-next-line react-hooks/exhaustive-deps
