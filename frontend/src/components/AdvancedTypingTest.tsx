@@ -20,6 +20,8 @@ import { FaRedo } from 'react-icons/fa'
 import type { CustomizationConfig } from '../store/customizationStore'
 import { saveTest } from '../api/tests'
 import { useNavigate } from 'react-router-dom'
+import { Cursor } from './Cursor'
+import type { CursorVariant } from './Cursor'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
@@ -458,8 +460,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modes, subOptions, codeLanguage, customText])
 
-
-
   // Renders each character in its own <Text as="span"> with data-index
   const renderText = () => {
     return text.split('').map((char, idx) => {
@@ -495,47 +495,11 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           {char}
           {/* Cursor: only on the current character */}
           {idx === userInput.length && (
-            customization.cursor === 'bar' ? (
-              <Box
-                as="span"
-                w="2px"
-                h="1.2em"
-                bg="yellow.300"
-                position="absolute"
-                left={0}
-                top={0}
-                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
-                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
-                willChange="left, top"
-              />
-            ) : customization.cursor === 'underscore' ? (
-              <Box
-                as="span"
-                w="0.6em"
-                h="2px"
-                bg="yellow.300"
-                position="absolute"
-                left={0}
-                bottom={-2}
-                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
-                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
-                willChange="left, top"
-              />
-            ) : customization.cursor === 'block' ? (
-              <Box
-                as="span"
-                w="0.65em"
-                h="1.2em"
-                bg="yellow.300"
-                opacity={0.5}
-                position="absolute"
-                left={0}
-                top={0}
-                animation={!isActive && customization.cursorBlink ? 'blink 1s step-end infinite' : 'none'}
-                transition="left 0.5s cubic-bezier(.4,0,.2,1), top 0.28s cubic-bezier(.4,0,.2,1), background 0.2s"
-                willChange="left, top"
-              />
-            ) : null
+            <Cursor
+              variant={customization.cursor as CursorVariant}
+              isActive={isActive}
+              blink={customization.cursorBlink}
+            />
           )}
         </Text>
       )
