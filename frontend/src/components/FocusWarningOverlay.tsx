@@ -44,6 +44,7 @@ export const FocusWarningOverlay: React.FC<FocusWarningOverlayProps> = ({ mainCo
         tabIndex={0}
         role="alertdialog"
         aria-modal="true"
+        fontFamily="monospace"
       >
         Click or press any key to focus
       </Box>
