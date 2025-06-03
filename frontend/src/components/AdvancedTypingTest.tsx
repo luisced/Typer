@@ -458,9 +458,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modes, subOptions, codeLanguage, customText])
 
-  const handleGenerateAI = () => {
-    toast({ title: 'AI text generation not implemented yet', status: 'info' })
-  }
+
 
   // Renders each character in its own <Text as="span"> with data-index
   const renderText = () => {
@@ -513,7 +511,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
             ) : customization.cursor === 'underscore' ? (
               <Box
                 as="span"
-                w="1em"
+                w="0.6em"
                 h="2px"
                 bg="yellow.300"
                 position="absolute"
@@ -565,8 +563,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   }, [userInput, text, setWrittenWords, setTotalWords]);
 
   return (
-    <Flex direction="column"  bg="transparent" align="center" justify="center" px={2}>
-
+    <Flex 
+      direction="column"  
+      bg="transparent" 
+      align="center" 
+      justify="center" 
+      px={2}
+      userSelect="none"
+    >
       {/* Text Display Area */}
       <Flex
         align="center"
@@ -575,7 +579,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         width="100%"
         onClick={handleTextClick}
         tabIndex={0}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'default' }}
+        userSelect="none"
       >
         {modes.includes('code') && (
           <CodeEditor
@@ -594,21 +599,26 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
             color="gray.600"
             textAlign="left"
             width="100%"
-            overflowY="auto"
+            overflowY="hidden"
             px={{ base: 2, md: 8 }}
             py={4}
             letterSpacing="1px"
             maxW="1200px"
-            maxHeight="180px" 
+            maxHeight="190px" 
             lineHeight={2}
             userSelect="none"
             whiteSpace="pre-wrap"
             wordBreak="break-word"
             bg="transparent"
+            cursor="default"
             sx={{
               scrollbarWidth: 'none', // Firefox
               msOverflowStyle: 'none', // IE/Edge
               '&::-webkit-scrollbar': { display: 'none' }, // Chrome/Safari
+              WebkitUserSelect: 'none', // Safari
+              MozUserSelect: 'none', // Firefox
+              msUserSelect: 'none', // IE/Edge
+              pointerEvents: 'none', // Prevent manual scrolling
             }}
           >
             {renderText()}
