@@ -13,7 +13,8 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  Textarea
+  Textarea,
+  useDisclosure
 } from '@chakra-ui/react'
 import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
@@ -22,6 +23,7 @@ import { saveTest } from '../api/tests'
 import { useNavigate } from 'react-router-dom'
 import { Cursor } from './Cursor'
 import type { CursorVariant } from './Cursor'
+import { FocusWarningOverlay } from './FocusWarningOverlay'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
@@ -67,6 +69,21 @@ interface AdvancedTypingTestProps {
   customization: CustomizationConfig;
 }
 
+interface TestResult {
+  wpm: number;
+  accuracy: number;
+  time: number;
+  keystrokes: {
+    correct: number;
+    incorrect: number;
+  };
+  charStats: Array<{
+    char: string;
+    correct: boolean;
+    time: number;
+  }>;
+}
+
 const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   modes,
   setModes,
@@ -99,13 +116,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   const [duration, setDuration] = useState<number>(0)
   const [restarts, setRestarts] = useState<number>(0)
   const [consistency, setConsistency] = useState<number>(0)
-  const [charStats, setCharStats] = useState({
-    correct: 0,
-    incorrect: 0,
-    extra: 0,
-    missed: 0
-  })
-  const [keystrokes, setKeystrokes] = useState<number[]>([])
+  const [charStats, setCharStats] = useState<Array<{ char: string; correct: boolean; time: number }>>([])
+  const [keystrokes, setKeystrokes] = useState<{ correct: number; incorrect: number }>({ correct: 0, incorrect: 0 })
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const [charLogs, setCharLogs] = useState<Record<string, {
     attempts: number;
@@ -115,6 +127,10 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   }>>({})
   const toast = useToast()
   const navigate = useNavigate()
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [testResult, setTestResult] = useState<any>(null)
+  const [isFocusWarning, setIsFocusWarning] = useState(false)
+  const mainContainerRef = useRef<HTMLDivElement>(null)
 
   // Ref for the text container
   const textContainerRef = useRef<HTMLDivElement>(null)
@@ -262,13 +278,17 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     // Track keystroke timing for consistency
     const now = Date.now()
     if (lastKeystrokeTime) {
-      setKeystrokes(prev => [...prev, now - lastKeystrokeTime])
+      setKeystrokes(prev => ({
+        correct: prev.correct + (text[value.length - 1] === text[value.length - 2] ? 1 : 0),
+        incorrect: prev.incorrect + (text[value.length - 1] !== text[value.length - 2] ? 1 : 0)
+      }))
     }
     setLastKeystrokeTime(now)
 
     // Track character-level statistics
     const currentChar = text[value.length - 1]
     if (currentChar) {
+      setCharStats(prev => [...prev, { char: currentChar, correct: value[value.length - 1] === currentChar, time: now - (startTime || Date.now()) }])
       setCharLogs(prev => {
         const charLog = prev[currentChar] || {
           attempts: 0,
@@ -293,6 +313,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     }
 
     setUserInput(value)
+    setIsFocusWarning(false)
   }
 
   // Update duration for words-only mode
@@ -333,13 +354,11 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   }, [userInput, text, isActive, startTime, modes, finished])
 
   // Calculate consistency based on keystroke timing
-  const calculateConsistency = (keystrokes: number[]): number => {
-    if (keystrokes.length < 2) return 0;
-    const avg = keystrokes.reduce((a, b) => a + b, 0) / keystrokes.length;
-    const withinRange = keystrokes.filter(t => 
-      Math.abs(t - avg) / avg <= 0.2
-    ).length;
-    return (withinRange / keystrokes.length) * 100;
+  const calculateConsistency = (keystrokes: { correct: number; incorrect: number }): number => {
+    const total = keystrokes.correct + keystrokes.incorrect
+    if (total < 2) return 0;
+    const withinRange = Math.abs(keystrokes.correct - keystrokes.incorrect) / total <= 0.2
+    return withinRange ? 100 : 0;
   };
 
   const endTest = async () => {
@@ -387,11 +406,19 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       total_time: stats.total_time
     }))
 
+    const result: TestResult = {
+      wpm: rawWpm,
+      accuracy: Math.round((correct / userInput.length) * 100),
+      time: finalDuration,
+      keystrokes,
+      charStats,
+    };
+
     try {
       const saved = await saveTest({
-        wpm,
+        wpm: rawWpm,
         raw_wpm: rawWpm,
-        accuracy,
+        accuracy: Math.round((correct / userInput.length) * 100),
         consistency: consistencyScore,
         test_type: modes.join(','),
         duration: finalDuration,
@@ -405,7 +432,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         },
         restarts
       })
-      navigate('/results', { state: { latestTest: saved } })
+      setTestResult(result)
+      onOpen()
     } catch (error) {
       toast({
         title: 'Error saving test results',
@@ -452,8 +480,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setShowResults(false)
     setStartTime(null)
     setFinished(false)
-    setKeystrokes([])
-    setLastKeystrokeTime(null)
+    setCharStats([])
+    setKeystrokes({ correct: 0, incorrect: 0 })
     setCharLogs({}) // Reset character logs
     // Refocus after a short delay
     setTimeout(() => inputRef.current?.focus(), 100)
@@ -526,6 +554,32 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setTotalWords(total);
   }, [userInput, text, setWrittenWords, setTotalWords]);
 
+  // Focus warning logic
+  useEffect(() => {
+    const handleFocus = () => setIsFocusWarning(false);
+    const handleBlur = () => setIsFocusWarning(true);
+    const node = mainContainerRef.current;
+    if (node) {
+      node.addEventListener('focusin', handleFocus);
+      node.addEventListener('focusout', handleBlur);
+    }
+    return () => {
+      if (node) {
+        node.removeEventListener('focusin', handleFocus);
+        node.removeEventListener('focusout', handleBlur);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Show warning on mount if not focused
+    setTimeout(() => {
+      if (document.activeElement !== inputRef.current) {
+        setIsFocusWarning(true);
+      }
+    }, 200);
+  }, []);
+
   return (
     <Flex 
       direction="column"  
@@ -534,8 +588,20 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       justify="center" 
       px={2}
       userSelect="none"
+      ref={mainContainerRef}
+      tabIndex={-1}
+      position="relative"
     >
-      {/* Text Display Area */}
+      {/* Focus Warning Overlay */}
+      {isFocusWarning && (
+        <FocusWarningOverlay
+          mainContainerRef={mainContainerRef}
+          onFocus={() => {
+            setIsFocusWarning(false);
+            inputRef.current?.focus();
+          }}
+        />
+      )}
       <Flex
         align="center"
         justify="center"
@@ -664,6 +730,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           />
         </Flex>
       )}
+
+      
     </Flex>
   )
 }
