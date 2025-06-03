@@ -434,6 +434,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       })
       setTestResult(result)
       onOpen()
+      navigate('/results')
     } catch (error) {
       toast({
         title: 'Error saving test results',
