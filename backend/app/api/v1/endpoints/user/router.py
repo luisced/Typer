@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.session import get_db
 from app.api.v1.endpoints.user import schemas, service, models
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_roles
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from app.core.config import settings
+from app.api.v1.endpoints.user.models import RoleType, SiteSettings, AuditLog
 import logging
 
 # Configure logging
@@ -17,6 +18,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+admin_required = require_roles([RoleType.ADMIN])
 
 @router.post("/register", response_model=schemas.Token)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -224,4 +227,92 @@ def update_user_customization(
 ):
     """Update the current user's customization settings."""
     user_service = service.UserService(db)
-    return user_service.update_user_customization(current_user.id, customization) 
+    return user_service.update_user_customization(current_user.id, customization)
+
+@router.get("/settings", dependencies=[Depends(admin_required)])
+def get_settings(db: Session = Depends(get_db)):
+    settings = db.query(SiteSettings).first()
+    if not settings:
+        settings = SiteSettings()
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    return settings
+
+@router.put("/settings", dependencies=[Depends(admin_required)])
+def update_settings(data: dict, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    settings = db.query(SiteSettings).first()
+    if not settings:
+        settings = SiteSettings()
+        db.add(settings)
+    for k, v in data.items():
+        setattr(settings, k, v)
+    db.commit()
+    db.refresh(settings)
+    # Log the action
+    log = AuditLog(action=f"Updated site settings: {data}", user_id=current_user.id)
+    db.add(log)
+    db.commit()
+    return settings
+
+@router.get("/audit-logs", dependencies=[Depends(admin_required)])
+def get_audit_logs(db: Session = Depends(get_db)):
+    return db.query(AuditLog).order_by(AuditLog.date.desc()).all()
+
+@router.get("/users", dependencies=[Depends(admin_required)])
+def list_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    return users
+
+@router.get("/users/{user_id}", dependencies=[Depends(admin_required)])
+def get_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.put("/users/{user_id}", dependencies=[Depends(admin_required)])
+def update_user(user_id: str, user_update: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    user_service = service.UserService(db)
+    updated = user_service.update_user(user_id, user_update)
+    if not updated:
+        raise HTTPException(status_code=404, detail="User not found")
+    log = AuditLog(action=f"Updated user {user_id}", user_id=current_user.id)
+    db.add(log)
+    db.commit()
+    return updated
+
+@router.delete("/users/{user_id}", dependencies=[Depends(admin_required)])
+def delete_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    user_service = service.UserService(db)
+    deleted = user_service.delete_user(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+    log = AuditLog(action=f"Deleted user {user_id}", user_id=current_user.id)
+    db.add(log)
+    db.commit()
+    return {"detail": "User deleted"}
+
+@router.patch("/users/{user_id}/ban", dependencies=[Depends(admin_required)])
+def ban_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = False
+    db.commit()
+    log = AuditLog(action=f"Banned user {user_id}", user_id=current_user.id)
+    db.add(log)
+    db.commit()
+    return {"detail": "User banned"}
+
+@router.patch("/users/{user_id}/unban", dependencies=[Depends(admin_required)])
+def unban_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = True
+    db.commit()
+    log = AuditLog(action=f"Unbanned user {user_id}", user_id=current_user.id)
+    db.add(log)
+    db.commit()
+    return {"detail": "User unbanned"} 

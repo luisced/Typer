@@ -129,4 +129,17 @@ class UserCustomization(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
-    user = relationship("User", back_populates="customization") 
+    user = relationship("User", back_populates="customization")
+
+class SiteSettings(Base):
+    __tablename__ = "site_settings"
+    id = Column(Integer, primary_key=True)
+    maintenance_mode = Column(Boolean, default=False)
+    registration_open = Column(Boolean, default=True)
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True)
+    action = Column(String)
+    date = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True) 
