@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Box } from '@chakra-ui/react';
+import { PiCursorClickBold } from "react-icons/pi";
 
 interface Props {
   mainContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -46,8 +47,12 @@ export const FocusWarningOverlay: React.FC<Props> = ({ mainContainerRef, onFocus
         cursor="pointer"
         _hover={{ color: 'yellow.200' }}
         onClick={onFocus}
+        fontFamily="monospace"
       >
-        Click or press any key to focus
+        <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
+          <PiCursorClickBold />
+          <span>Click or press any key to focus</span>
+        </Box>
       </Box>
     </Box>
   );
