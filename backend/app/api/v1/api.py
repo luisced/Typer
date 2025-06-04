@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from .endpoints.user.router import router as user_router
-from .endpoints.tests.router import router as tests_router
+from app.api.v1.endpoints.user.router import router as user_router
+from app.api.v1.endpoints.tests.router import router as tests_router
 
 api_router = APIRouter()
 

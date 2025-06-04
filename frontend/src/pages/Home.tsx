@@ -6,10 +6,15 @@ import AdvancedTypingTest from '../components/AdvancedTypingTest'
 import { useCustomizationStore } from '../store/customizationStore'
 import { getCurrentUser } from '../utils/api'
 import Cookies from 'js-cookie'
-import { useNavigate } from 'react-router-dom'
 
 const DEFAULT_TIME = 15
 const DEFAULT_WORDS = 10
+
+const getInitialLanguage = () => {
+  const saved = Cookies.get('typingTestLanguage');
+  if (saved && ['en', 'es', 'fr', 'de'].includes(saved)) return saved;
+  return 'en';
+};
 
 const Home: React.FC = () => {
   const [modes, setModes] = useState<string[]>(['words'])
@@ -17,7 +22,7 @@ const Home: React.FC = () => {
     time: DEFAULT_TIME,
     words: DEFAULT_WORDS,
   })
-  const [language, setLanguage] = useState('English')
+  const [language, setLanguage] = useState(getInitialLanguage())
   const [codeLanguage, setCodeLanguage] = useState('Python')
   // Stats state for demo (could be lifted up from AdvancedTypingTest if needed)
   const [wpm, setWpm] = useState(0)

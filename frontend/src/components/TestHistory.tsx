@@ -24,6 +24,14 @@ import { useTests } from '../hooks/useTests';
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
+// Language mapping for display
+const languageMap: Record<string, string> = {
+  'en': 'English',
+  'es': 'Spanish',
+  'fr': 'French',
+  'de': 'German'
+};
+
 export const TestHistory: React.FC = () => {
   const { tests, isLoading, error } = useTests();
   const headerBg = useColorModeValue('gray.700', 'gray.700');
@@ -65,6 +73,15 @@ export const TestHistory: React.FC = () => {
     ));
   };
 
+  const getLanguageBadge = (lang: string) => {
+    const displayName = languageMap[lang] || lang;
+    return (
+      <Badge colorScheme="purple" mr={1}>
+        {displayName}
+      </Badge>
+    );
+  };
+
   // Pagination calculations
   const totalPages = Math.ceil((tests?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -95,6 +112,7 @@ export const TestHistory: React.FC = () => {
               <Th color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">Consistency</Th>
               <Th color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">Duration</Th>
               <Th color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">Type</Th>
+              <Th color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">Language</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -138,6 +156,11 @@ export const TestHistory: React.FC = () => {
                 <Td>
                   <Box>
                     {getTestTypeBadge(test.test_type)}
+                  </Box>
+                </Td>
+                <Td>
+                  <Box>
+                    {getLanguageBadge(test.language)}
                   </Box>
                 </Td>
               </Tr>

@@ -26,6 +26,7 @@ export interface TestCreate {
     missed: number;
   };
   restarts: number;  // number of times user hit reset
+  language: string;  // Language code (en, es, etc.)
 }
 
 export interface TestResponse {
@@ -45,6 +46,7 @@ export interface TestResponse {
     missed: number;
   };
   restarts: number;
+  language: string;  // Language code (en, es, etc.)
   char_logs: Array<CharLog & { id: string; test_id: string }>;
 }
 

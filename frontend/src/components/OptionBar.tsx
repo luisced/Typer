@@ -1,5 +1,7 @@
 import { Box, Flex, Button, Icon, Select, useColorModeValue, Collapse } from '@chakra-ui/react'
 import { FaAt, FaHashtag, FaClock, FaFont, FaCode, FaMountain, FaWrench, FaTimes } from 'react-icons/fa'
+import { useEffect } from 'react'
+import Cookies from 'js-cookie'
 
 const mainOptions = [
   { key: 'punctuation', label: 'punctuation', icon: FaAt },
@@ -18,7 +20,23 @@ const exclusiveOptions = ['code', 'zen', 'custom']
 
 const timeOptions = [15, 30, 60]
 const wordOptions = [10, 25, 50, 100]
-const languageOptions = ['English', 'Spanish', 'French', 'German']
+
+// Maps ISO → Full name
+const REVERSE_LANGUAGE_MAP: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+};
+
+// Maps Full name → ISO (for backward compatibility if you previously saved names)
+const LANGUAGE_TO_CODE: Record<string, string> = {
+  English: "en",
+  Spanish: "es",
+  French: "fr",
+  German: "de",
+};
+
 const codeLanguages = ['Python', 'JavaScript']
 
 const OptionBar = ({
@@ -37,6 +55,42 @@ const OptionBar = ({
   const activeColor = 'yellow.400'
   const inactiveColor = 'gray.400'
   const subInactive = 'gray.500'
+
+  // Whenever the user picks a new language from the dropdown:
+  const handleLanguageChange = (iso: string) => {
+    setLanguage(iso); // Always store ISO code in state
+    // Write the ISO code to cookie so it persists:
+    Cookies.set('typingTestLanguage', iso, { expires: 365 });
+  };
+
+  useEffect(() => {
+    // On mount, try to load the cookie value:
+    const saved = Cookies.get('typingTestLanguage');
+    if (!saved) {
+      // No cookie found → set default to 'en'
+      setLanguage('en');
+      Cookies.set('typingTestLanguage', 'en', { expires: 365 });
+      return;
+    }
+
+    // If the saved value matches a valid ISO code, use it directly:
+    if (REVERSE_LANGUAGE_MAP[saved]) {
+      setLanguage(saved);
+      return;
+    }
+
+    // Convert full name to ISO code if needed (backward compatibility)
+    if (LANGUAGE_TO_CODE[saved]) {
+      const isoCode = LANGUAGE_TO_CODE[saved];
+      setLanguage(isoCode);
+      Cookies.set('typingTestLanguage', isoCode, { expires: 365 }); // Update cookie to use ISO code
+      return;
+    }
+
+    // If it's neither a known code nor a known full name, default to 'en'
+    setLanguage('en');
+    Cookies.set('typingTestLanguage', 'en', { expires: 365 });
+  }, [setLanguage]);
 
   const handleModeClick = (mode: string) => {
     if (exclusiveOptions.includes(mode)) {
@@ -160,19 +214,15 @@ const OptionBar = ({
       {/* Language picker */}
       <Select
         value={language}
-        onChange={e => setLanguage(e.target.value)}
-        bg="gray.900"
-        color="gray.300"
-        border="none"
-        fontWeight="bold"
-        fontSize="md"
-        width="auto"
-        ml={4}
-        _focus={{ outline: 'none' }}
-        transition="all 0.2s ease"
+        onChange={(e) => handleLanguageChange(e.target.value)}
+        size="sm"
+        width="120px"
+        color={inactiveColor}
       >
-        {languageOptions.map(l => (
-          <option key={l} value={l}>{l}</option>
+        {Object.entries(REVERSE_LANGUAGE_MAP).map(([code, label]) => (
+          <option key={code} value={code}>
+            {label}
+          </option>
         ))}
       </Select>
       <Button variant="ghost" color={inactiveColor} px={2} py={1} ml={2} fontSize="lg" transition="all 0.2s ease">

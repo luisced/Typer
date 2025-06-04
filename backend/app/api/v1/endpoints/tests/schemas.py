@@ -19,6 +19,7 @@ class UserTestCreate(BaseModel):
     timestamp: Optional[datetime] = None
     chars: Dict[str, int]
     restarts: int = 0
+    language: str = 'en'  # Language code (en, es, etc.)
 
 class UserTestCharLogRead(UserTestCharLogCreate):
     id: str
@@ -29,6 +30,7 @@ class UserTestRead(UserTestCreate):
     user_id: str
     timestamp: datetime
     char_logs: List[UserTestCharLogRead]
+    language: str
 
 class TestContent(BaseModel):
     content: str

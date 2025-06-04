@@ -2,12 +2,20 @@ from app.api.v1.endpoints.tests.repository import UserTestRepository
 from app.api.v1.endpoints.tests import schemas, models
 from app.api.v1.endpoints.tests.utils import NLTKTextHandler
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 class UserTestService:
+    # Cache for text handlers by language to avoid rebuilding corpora on every request
+    _text_handlers: Dict[str, NLTKTextHandler] = {}
+
     def __init__(self, db: Session):
         self.repository = UserTestRepository(db)
-        self.text_handler = NLTKTextHandler()
+
+    def _get_text_handler(self, lang: str) -> NLTKTextHandler:
+        """Get or create a cached text handler for the specified language."""
+        if lang not in self._text_handlers:
+            self._text_handlers[lang] = NLTKTextHandler(lang=lang)
+        return self._text_handlers[lang]
 
     def create_test(self, user_id: str, test: schemas.UserTestCreate) -> models.UserTest:
         return self.repository.create_test(user_id, test)
@@ -36,7 +44,9 @@ class UserTestService:
         :return: TestContent object with generated content
         :raises ValueError: If mode is invalid or parameters are invalid
         """
-        text_handler = NLTKTextHandler(lang=lang)
+        # Use cached text handler instead of creating new instance every time
+        text_handler = self._get_text_handler(lang or "en")
+        
         if mode == "words":
             if not level:
                 level = "easy"
@@ -89,6 +99,7 @@ class UserTestService:
             chars=db_test.chars,
             restarts=db_test.restarts,
             timestamp=db_test.timestamp,
+            language=db_test.language,
             char_logs=[
                 schemas.UserTestCharLogRead(
                     id=log.id,

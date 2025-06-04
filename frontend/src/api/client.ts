@@ -61,13 +61,15 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, clear the tokens and redirect to login
+        // If refresh fails, clear the tokens
         Cookies.remove('access_token');
         Cookies.remove('refresh_token');
         
-        // Only redirect if we're not already on the login page
-        if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+        // Only redirect to login if we're not on a public route
+        const publicRoutes = ['/login', '/register', '/forgot-password'];
+        const currentPath = window.location.pathname;
+        if (!publicRoutes.includes(currentPath)) {
+          window.location.href = '/login';
         }
         return Promise.reject(refreshError);
       }

@@ -16,6 +16,7 @@ class UserTest(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
     chars = Column(JSON, nullable=False)  
     restarts = Column(Integer, nullable=False, default=0)  
+    language = Column(String, nullable=False, default='en')  # Language code (en, es, etc.)
     char_logs = relationship("UserTestCharLog", back_populates="test", cascade="all, delete-orphan")
 
     # Add constraints
