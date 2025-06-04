@@ -43,54 +43,54 @@ const CustomizationSettings = () => {
         <Grid templateColumns="repeat(2, 1fr)" gap={8}>
           {/* Left Column */}
           <GridItem>
-            <VStack spacing={6} align="stretch">
+      <VStack spacing={6} align="stretch">
               {/* Theme Section */}
               <Box>
                 <Heading size="md" mb={4}>Theme</Heading>
                 <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                  {themeSwatches.map(opt => (
+            {themeSwatches.map(opt => (
                     <Tooltip key={opt.value} label={opt.description} placement="top">
                       <Box
-                        as="button"
-                        aria-label={opt.label}
-                        borderRadius="lg"
+                as="button"
+                aria-label={opt.label}
+                borderRadius="lg"
                         p={4}
-                        bg={opt.color}
-                        border={config.theme === opt.value ? '3px solid #FFD700' : '2px solid #444'}
-                        boxShadow={config.theme === opt.value ? '0 0 0 2px #FFD700' : 'none'}
-                        transition="all 0.2s"
-                        outline="none"
-                        _focus={{ boxShadow: '0 0 0 2px #3182ce' }}
-                        onClick={() => setConfig({ theme: opt.value })}
-                        position="relative"
-                        cursor="pointer"
+                bg={opt.color}
+                border={config.theme === opt.value ? '3px solid #FFD700' : '2px solid #444'}
+                boxShadow={config.theme === opt.value ? '0 0 0 2px #FFD700' : 'none'}
+                transition="all 0.2s"
+                outline="none"
+                _focus={{ boxShadow: '0 0 0 2px #3182ce' }}
+                onClick={() => setConfig({ theme: opt.value })}
+                position="relative"
+                cursor="pointer"
                         h="100px"
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
-                      >
+              >
                         <Text color={opt.value === 'moon-light' ? 'gray.800' : 'white'} fontWeight="bold">
                           {opt.label}
                         </Text>
-                        {opt.value === 'custom' && (
-                          <Box
-                            position="absolute"
+                {opt.value === 'custom' && (
+                  <Box
+                    position="absolute"
                             bottom={2}
                             right={2}
                             w="16px"
                             h="16px"
-                            borderRadius="full"
-                            bg={config.accent}
+                    borderRadius="full"
+                    bg={config.accent}
                             border="2px solid #fff"
-                          />
-                        )}
+                  />
+                )}
                       </Box>
                     </Tooltip>
-                  ))}
+            ))}
                 </Grid>
-                {config.theme === 'custom' && (
+        {config.theme === 'custom' && (
                   <FormControl mt={4}>
-                    <FormLabel>Accent Color</FormLabel>
+            <FormLabel>Accent Color</FormLabel>
                     <HStack>
                       <Input 
                         type="color" 
@@ -104,29 +104,29 @@ const CustomizationSettings = () => {
                       />
                       <Text color="gray.400">{config.accent}</Text>
                     </HStack>
-                  </FormControl>
-                )}
+          </FormControl>
+        )}
               </Box>
 
               {/* Cursor Section */}
               <Box>
                 <Heading size="md" mb={4}>Cursor</Heading>
                 <VStack align="stretch" spacing={4}>
-                  <RadioGroup value={config.cursor} onChange={v => setConfig({ cursor: v })}>
-                    <HStack spacing={6}>
-                      {cursorOptions.map(opt => (
+          <RadioGroup value={config.cursor} onChange={v => setConfig({ cursor: v })}>
+            <HStack spacing={6}>
+              {cursorOptions.map(opt => (
                         <Radio key={opt.value} value={opt.value} size="lg">{opt.label}</Radio>
-                      ))}
-                    </HStack>
-                  </RadioGroup>
+              ))}
+            </HStack>
+          </RadioGroup>
                   <HStack>
                     <Switch 
                       isChecked={config.cursorBlink} 
                       onChange={e => setConfig({ cursorBlink: e.target.checked })}
                       size="lg"
                     />
-                    <Text>Cursor Blinks</Text>
-                  </HStack>
+            <Text>Cursor Blinks</Text>
+          </HStack>
                 </VStack>
               </Box>
 
@@ -134,7 +134,7 @@ const CustomizationSettings = () => {
               <Box>
                 <Heading size="md" mb={4}>Font</Heading>
                 <VStack align="stretch" spacing={4}>
-                  <FormControl>
+        <FormControl>
                     <FormLabel>Font Family</FormLabel>
                     <Select 
                       value={config.font} 
@@ -144,9 +144,9 @@ const CustomizationSettings = () => {
                       color="gray.100"
                     >
                       {fontFamilies.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </Select>
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </Select>
                   </FormControl>
                   <FormControl>
                     <FormLabel>Font Size</FormLabel>
@@ -160,14 +160,14 @@ const CustomizationSettings = () => {
                         colorScheme="blue"
                         flex={1}
                       >
-                        <SliderTrack>
-                          <SliderFilledTrack />
-                        </SliderTrack>
-                        <SliderThumb />
-                      </Slider>
+                <SliderTrack>
+                  <SliderFilledTrack />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
                       <Text w="40px" textAlign="right">{config.fontSize}px</Text>
                     </HStack>
-                  </FormControl>
+        </FormControl>
                 </VStack>
               </Box>
             </VStack>
@@ -190,7 +190,7 @@ const CustomizationSettings = () => {
                   </HStack>
                   {config.sounds && (
                     <>
-                      <FormControl>
+        <FormControl>
                         <FormLabel>Sound Set</FormLabel>
                         <Select 
                           value={config.soundSet} 
@@ -200,9 +200,9 @@ const CustomizationSettings = () => {
                           color="gray.100"
                         >
                           {soundSets.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </Select>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </Select>
                       </FormControl>
                       <FormControl>
                         <FormLabel>Volume</FormLabel>
@@ -216,11 +216,11 @@ const CustomizationSettings = () => {
                             colorScheme="blue"
                             flex={1}
                           >
-                            <SliderTrack>
-                              <SliderFilledTrack />
-                            </SliderTrack>
-                            <SliderThumb />
-                          </Slider>
+            <SliderTrack>
+              <SliderFilledTrack />
+            </SliderTrack>
+            <SliderThumb />
+          </Slider>
                           <Text w="40px" textAlign="right">{config.volume}%</Text>
                         </HStack>
                       </FormControl>
@@ -241,52 +241,52 @@ const CustomizationSettings = () => {
                       mr={3}
                     />
                     <FormLabel mb={0}>Fill character as you type</FormLabel>
-                  </FormControl>
-                  <FormControl display="flex" alignItems="center">
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
                     <Switch 
                       isChecked={config.keyHighlight} 
                       onChange={e => setConfig({ keyHighlight: e.target.checked })}
                       size="lg"
                       mr={3}
                     />
-                    <FormLabel mb={0}>Highlight next key</FormLabel>
-                  </FormControl>
-                  <FormControl display="flex" alignItems="center">
+          <FormLabel mb={0}>Highlight next key</FormLabel>
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
                     <Switch 
                       isChecked={config.onScreenKeyboard} 
                       onChange={e => setConfig({ onScreenKeyboard: e.target.checked })}
                       size="lg"
                       mr={3}
                     />
-                    <FormLabel mb={0}>Show on-screen keyboard</FormLabel>
-                  </FormControl>
-                  <FormControl display="flex" alignItems="center">
+          <FormLabel mb={0}>Show on-screen keyboard</FormLabel>
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
                     <Switch 
                       isChecked={config.animations} 
                       onChange={e => setConfig({ animations: e.target.checked })}
                       size="lg"
                       mr={3}
                     />
-                    <FormLabel mb={0}>Enable UI animations</FormLabel>
-                  </FormControl>
-                  <FormControl display="flex" alignItems="center">
+          <FormLabel mb={0}>Enable UI animations</FormLabel>
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
                     <Switch 
                       isChecked={config.showStats} 
                       onChange={e => setConfig({ showStats: e.target.checked })}
                       size="lg"
                       mr={3}
                     />
-                    <FormLabel mb={0}>Show stats during test</FormLabel>
-                  </FormControl>
-                  <FormControl display="flex" alignItems="center">
+          <FormLabel mb={0}>Show stats during test</FormLabel>
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
                     <Switch 
                       isChecked={config.showProgress} 
                       onChange={e => setConfig({ showProgress: e.target.checked })}
                       size="lg"
                       mr={3}
                     />
-                    <FormLabel mb={0}>Show progress bar</FormLabel>
-                  </FormControl>
+          <FormLabel mb={0}>Show progress bar</FormLabel>
+        </FormControl>
                 </VStack>
               </Box>
             </VStack>
@@ -305,8 +305,8 @@ const CustomizationSettings = () => {
             size="lg"
             px={8}
           >
-            Reset to Default
-          </Button>
+          Reset to Default
+        </Button>
         </Flex>
       </VStack>
     </Box>

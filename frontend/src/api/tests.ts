@@ -1,4 +1,5 @@
 import { api } from './client';
+import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -47,6 +48,11 @@ export interface TestResponse {
   char_logs: Array<CharLog & { id: string; test_id: string }>;
 }
 
+export interface TestContent {
+  content: string;
+  type: string;
+}
+
 export const saveTest = async (testData: TestCreate): Promise<TestResponse> => {
   const response = await api.post(`${API_URL}/tests/me/typing`, testData);
   return response.data;
@@ -54,5 +60,23 @@ export const saveTest = async (testData: TestCreate): Promise<TestResponse> => {
 
 export const fetchAllTests = async (): Promise<TestResponse[]> => {
   const response = await api.get(`${API_URL}/tests/me/typing`);
+  return response.data;
+};
+
+export const getTestContent = async (
+  mode: 'words' | 'sentences' | 'code' | 'zen' | 'custom',
+  count?: number,
+  level?: 'easy' | 'medium' | 'hard',
+  includeNumbers?: boolean,
+  includePunctuation?: boolean
+): Promise<TestContent> => {
+  const params = new URLSearchParams();
+  params.append('mode', mode);
+  if (count) params.append('count', count.toString());
+  if (level) params.append('level', level);
+  if (includeNumbers !== undefined) params.append('include_numbers', includeNumbers.toString());
+  if (includePunctuation !== undefined) params.append('include_punctuation', includePunctuation.toString());
+
+  const response = await axios.get(`${API_URL}/tests/content?${params.toString()}`);
   return response.data;
 }; 

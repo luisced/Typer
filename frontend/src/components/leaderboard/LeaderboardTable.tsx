@@ -27,12 +27,21 @@ import {
   VStack,
   FormControl,
   FormLabel,
+  Checkbox,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FaCrown, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { UserAvatar } from './UserAvatar';
 import { UserBadge } from './UserBadge';
 import { useLeaderboard } from '../../context/LeaderboardContext';
+import UserComparison from './UserComparison';
 
 const glow = keyframes`
   0% {
@@ -71,6 +80,9 @@ export const LeaderboardTable: React.FC = () => {
     endDate,
     setEndDate
   } = useLeaderboard();
+
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -112,6 +124,16 @@ export const LeaderboardTable: React.FC = () => {
     { label: '50 Words', value: 50 },
     { label: '100 Words', value: 100 },
   ];
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleCompare = () => {
+    onOpen();
+  };
 
   if (loading) {
     return (
@@ -223,6 +245,7 @@ export const LeaderboardTable: React.FC = () => {
         <Table variant="simple">
           <Thead>
             <Tr>
+              <Th w="8"></Th>
               <Th w="12" color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">#</Th>
               <Th color="gray.400" fontSize="xs" textTransform="uppercase" letterSpacing="wider">User</Th>
               <Th
@@ -310,6 +333,14 @@ export const LeaderboardTable: React.FC = () => {
                 transition="background-color 0.2s"
               >
                 <Td>
+                  <Checkbox
+                    isChecked={selectedUserIds.includes(user.id)}
+                    onChange={() => handleSelectUser(user.id)}
+                    colorScheme="blue"
+                    aria-label={`Select ${user.name}`}
+                  />
+                </Td>
+                <Td>
                   {user.rank === 1 ? (
                     <Flex justify="center">
                       <Icon as={FaCrown} boxSize={5} color="amber.400" />
@@ -366,6 +397,27 @@ export const LeaderboardTable: React.FC = () => {
           </Tbody>
         </Table>
       </Box>
+
+      {/* Compare Button */}
+      {selectedUserIds.length >= 2 && (
+        <Flex justify="flex-end" mt={4}>
+          <Button colorScheme="blue" onClick={handleCompare}>
+            Compare ({selectedUserIds.length})
+          </Button>
+        </Flex>
+      )}
+
+      {/* Comparison Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+        <ModalContent bg="gray.900">
+          <ModalHeader>Compare Users</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <UserComparison userIds={selectedUserIds} onClose={onClose} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       <Flex justify="space-between" align="center" mt={6} fontSize="sm">
         <Text color="gray.400">

@@ -340,3 +340,83 @@ curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
 curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
   -H "Authorization: Bearer <access_token>"
 ``` 
+
+## Admin-Only Endpoints
+
+All endpoints below require the ADMIN role (access token for an admin user).
+
+### List Users
+```http
+GET /api/v1/users
+Authorization: Bearer <access_token>
+```
+- Returns a list of all users.
+
+### Get User by ID
+```http
+GET /api/v1/users/{user_id}
+Authorization: Bearer <access_token>
+```
+- Returns user details for the given user ID.
+
+### Update User
+```http
+PUT /api/v1/users/{user_id}
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+    "email": "newemail@example.com",
+    "username": "newusername",
+    "full_name": "New Full Name",
+    "password": "newpassword"
+}
+```
+- Updates user information for the given user ID.
+
+### Delete User
+```http
+DELETE /api/v1/users/{user_id}
+Authorization: Bearer <access_token>
+```
+- Deletes the user with the given user ID.
+
+### Ban User
+```http
+PATCH /api/v1/users/{user_id}/ban
+Authorization: Bearer <access_token>
+```
+- Sets the user's `is_active` to `false` (bans the user).
+
+### Unban User
+```http
+PATCH /api/v1/users/{user_id}/unban
+Authorization: Bearer <access_token>
+```
+- Sets the user's `is_active` to `true` (unbans the user).
+
+### Site Settings
+```http
+GET /api/v1/users/settings
+Authorization: Bearer <access_token>
+```
+- Returns the current site settings.
+
+```http
+PUT /api/v1/users/settings
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+    "maintenance_mode": true,
+    "registration_open": false
+}
+```
+- Updates site settings.
+
+### Audit Log
+```http
+GET /api/v1/users/audit-logs
+Authorization: Bearer <access_token>
+```
+- Returns a list of audit log entries (most recent first). 

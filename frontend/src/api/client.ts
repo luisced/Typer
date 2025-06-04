@@ -67,7 +67,7 @@ api.interceptors.response.use(
         
         // Only redirect if we're not already on the login page
         if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
+        window.location.href = '/login';
         }
         return Promise.reject(refreshError);
       }
