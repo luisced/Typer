@@ -48,3 +48,48 @@ export async function getLeaderboard(params: LeaderboardParams = {}) {
     throw error;
   }
 } 
+
+// Admin User Management
+export async function listUsers() {
+  return api.get('/users/admin');
+}
+
+export async function getUserById(userId: string) {
+  return api.get(`/users/admin/${userId}`);
+}
+
+export async function updateUser(userId: string, data: any) {
+  return api.put(`/users/admin/${userId}`, data);
+}
+
+export async function deleteUser(userId: string) {
+  return api.delete(`/users/admin/${userId}`);
+}
+
+export async function banUser(userId: string) {
+  return api.patch(`/users/admin/${userId}/ban`);
+}
+
+export async function unbanUser(userId: string) {
+  return api.patch(`/users/admin/${userId}/unban`);
+}
+
+export async function assignUserRole(userId: string, role: string) {
+  return api.post(`/users/${userId}/roles/${role}`);
+}
+
+export async function removeUserRole(userId: string, role: string) {
+  return api.delete(`/users/${userId}/roles/${role}`);
+}
+
+export async function getAuditLogs() {
+  return api.get('/users/audit-logs');
+}
+
+export async function getSiteSettings() {
+  return api.get('/users/settings');
+}
+
+export async function updateSiteSettings(data: any) {
+  return api.put('/users/settings', data);
+} 

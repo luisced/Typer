@@ -339,7 +339,7 @@ curl -X DELETE http://localhost:8000/api/v1/users/me/roles/admin \
 # Admin assigns role to another user
 curl -X POST http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000/roles/admin \
   -H "Authorization: Bearer <access_token>"
-```
+``` 
 
 ## Admin-Only Endpoints
 

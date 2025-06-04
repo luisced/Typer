@@ -208,7 +208,7 @@ def get_leaderboard(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching leaderboard data: {str(e)}"
-        )
+        ) 
 
 @router.get("/me/customization", response_model=schemas.UserCustomizationInDB)
 def get_user_customization(
@@ -259,19 +259,19 @@ def update_settings(data: dict, db: Session = Depends(get_db), current_user: mod
 def get_audit_logs(db: Session = Depends(get_db)):
     return db.query(AuditLog).order_by(AuditLog.date.desc()).all()
 
-@router.get("/users", dependencies=[Depends(admin_required)])
+@router.get("/admin", dependencies=[Depends(admin_required)])
 def list_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
     return users
 
-@router.get("/users/{user_id}", dependencies=[Depends(admin_required)])
+@router.get("/admin/{user_id}", dependencies=[Depends(admin_required)])
 def get_user(user_id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.put("/users/{user_id}", dependencies=[Depends(admin_required)])
+@router.put("/admin/{user_id}", dependencies=[Depends(admin_required)])
 def update_user(user_id: str, user_update: schemas.UserUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     user_service = service.UserService(db)
     updated = user_service.update_user(user_id, user_update)
@@ -282,7 +282,7 @@ def update_user(user_id: str, user_update: schemas.UserUpdate, db: Session = Dep
     db.commit()
     return updated
 
-@router.delete("/users/{user_id}", dependencies=[Depends(admin_required)])
+@router.delete("/admin/{user_id}", dependencies=[Depends(admin_required)])
 def delete_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     user_service = service.UserService(db)
     deleted = user_service.delete_user(user_id)
@@ -293,7 +293,7 @@ def delete_user(user_id: str, db: Session = Depends(get_db), current_user: model
     db.commit()
     return {"detail": "User deleted"}
 
-@router.patch("/users/{user_id}/ban", dependencies=[Depends(admin_required)])
+@router.patch("/admin/{user_id}/ban", dependencies=[Depends(admin_required)])
 def ban_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
@@ -305,7 +305,7 @@ def ban_user(user_id: str, db: Session = Depends(get_db), current_user: models.U
     db.commit()
     return {"detail": "User banned"}
 
-@router.patch("/users/{user_id}/unban", dependencies=[Depends(admin_required)])
+@router.patch("/admin/{user_id}/unban", dependencies=[Depends(admin_required)])
 def unban_user(user_id: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:

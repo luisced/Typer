@@ -93,7 +93,7 @@ class UserProfile(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
-    user = relationship("User", back_populates="profile")
+    user = relationship("User", back_populates="profile") 
 
 class UserCustomization(Base):
     __tablename__ = "user_customizations"

@@ -36,7 +36,7 @@ class UserTestCharLog(Base):
     attempts = Column(Integer, nullable=False)
     errors = Column(Integer, nullable=False)
     total_time = Column(Integer, nullable=False)  # ms
-    test = relationship("UserTest", back_populates="char_logs")
+    test = relationship("UserTest", back_populates="char_logs") 
 
     # Add constraints and indexes
     __table_args__ = (
