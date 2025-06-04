@@ -68,7 +68,8 @@ export const getTestContent = async (
   count?: number,
   level?: 'easy' | 'medium' | 'hard',
   includeNumbers?: boolean,
-  includePunctuation?: boolean
+  includePunctuation?: boolean,
+  lang?: string
 ): Promise<TestContent> => {
   const params = new URLSearchParams();
   params.append('mode', mode);
@@ -76,6 +77,7 @@ export const getTestContent = async (
   if (level) params.append('level', level);
   if (includeNumbers !== undefined) params.append('include_numbers', includeNumbers.toString());
   if (includePunctuation !== undefined) params.append('include_punctuation', includePunctuation.toString());
+  if (lang) params.append('lang', lang);
 
   const response = await axios.get(`${API_URL}/tests/content?${params.toString()}`);
   return response.data;

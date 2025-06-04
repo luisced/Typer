@@ -21,7 +21,8 @@ class UserTestService:
         count: Optional[int] = None,
         level: Optional[str] = None,
         include_numbers: Optional[bool] = False,
-        include_punctuation: Optional[bool] = False
+        include_punctuation: Optional[bool] = False,
+        lang: Optional[str] = "en"
     ) -> schemas.TestContent:
         """
         Generate test content based on the specified mode and parameters.
@@ -31,50 +32,45 @@ class UserTestService:
         :param level: For word mode, one of ["easy", "medium", "hard"]
         :param include_numbers: Whether to include numbers in the content
         :param include_punctuation: Whether to include punctuation in the content
+        :param lang: Language code (e.g. 'en', 'es')
         :return: TestContent object with generated content
         :raises ValueError: If mode is invalid or parameters are invalid
         """
+        text_handler = NLTKTextHandler(lang=lang)
         if mode == "words":
             if not level:
                 level = "easy"
             if not count:
                 count = 25
-            words = self.text_handler.get_random_words(
+            words = text_handler.get_random_words(
                 level=level,
                 count=count,
-                include_numbers=include_numbers,
-                include_punctuation=include_punctuation
+                # include_numbers and include_punctuation are not used in get_random_words
             )
             return schemas.TestContent(content=" ".join(words), type="words")
         elif mode == "sentences":
             if not count:
                 count = 1
-            sentences = self.text_handler.get_random_sentences(
-                count=count,
-                include_numbers=include_numbers,
-                include_punctuation=include_punctuation
+            sentences = text_handler.get_random_sentences(
+                count=count
             )
             return schemas.TestContent(content=" ".join(sentences), type="sentences")
         elif mode == "code":
             # For now, use words mode with code-like content
-            words = self.text_handler.get_random_words(
+            words = text_handler.get_random_words(
                 level="hard",
-                count=25,
-                include_numbers=False,
-                include_punctuation=True
+                count=25
             )
             return schemas.TestContent(content=" ".join(words), type="code")
         elif mode == "zen":
             # For now, use sentences mode for zen
-            sentences = self.text_handler.get_random_sentences(count=1)
+            sentences = text_handler.get_random_sentences(count=1)
             return schemas.TestContent(content=" ".join(sentences), type="zen")
         elif mode == "custom":
             # For now, use words mode for custom
-            words = self.text_handler.get_random_words(
+            words = text_handler.get_random_words(
                 level=level or "easy",
-                count=count or 25,
-                include_numbers=include_numbers,
-                include_punctuation=include_punctuation
+                count=count or 25
             )
             return schemas.TestContent(content=" ".join(words), type="custom")
         else:

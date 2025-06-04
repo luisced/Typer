@@ -38,6 +38,7 @@ def get_test_content(
     level: Optional[str] = None,
     include_numbers: Optional[bool] = None,
     include_punctuation: Optional[bool] = None,
+    lang: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -48,6 +49,7 @@ def get_test_content(
     :param level: For word mode, one of ["easy", "medium", "hard"]
     :param include_numbers: Whether to include numbers in the content
     :param include_punctuation: Whether to include punctuation in the content
+    :param lang: Language code (e.g. 'en', 'es')
     :return: Test content
     """
     test_service = service.UserTestService(db)
@@ -56,5 +58,6 @@ def get_test_content(
         count=count,
         level=level,
         include_numbers=include_numbers or False,
-        include_punctuation=include_punctuation or False
+        include_punctuation=include_punctuation or False,
+        lang=lang or "en"
     ) 

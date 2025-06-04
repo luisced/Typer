@@ -181,13 +181,23 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       const onlyTime = isTime && !isWords;
       const wordCount = onlyTime ? 200 : subOptions.words;
 
+      // Map UI language name to language code
+      const languageMap: Record<string, string> = {
+        English: 'en',
+        Spanish: 'es',
+        French: 'fr',
+        German: 'de',
+      };
+      const langCode = languageMap[language] || 'en';
+
       // Get content based on mode
       const response = await getTestContent(
         mode,
         wordCount,
         difficulty,
         modes.includes('numbers'),
-        modes.includes('punctuation')
+        modes.includes('punctuation'),
+        langCode // use code, not UI name
       )
       content = Array.isArray(response.content) ? response.content : [response.content]
 
@@ -240,7 +250,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       fetchTestContent()
       setTimer(DEFAULT_TIME)
     }
-  }, [modes, subOptions, codeLanguage, customText, setTimer])
+  }, [modes, subOptions, codeLanguage, customText, setTimer, language])
 
   // Update text when customText changes in custom mode
   useEffect(() => {
@@ -548,6 +558,9 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       ref={mainContainerRef}
       tabIndex={-1}
       position="relative"
+      width="100%"
+      maxW="2000px"
+      mx="auto"
     >
       {/* Focus Warning Overlay */}
       {isFocusWarning && (
@@ -564,12 +577,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         justify="center"
         flex="1"
         width="100%"
+        maxW="2000px"
+        mx="auto"
         onClick={handleTextClick}
         tabIndex={0}
         style={{ cursor: 'default' }}
         userSelect="none"
       >
-        <Box w="800px" px={{ base: 2, md: 8 }}>
+        <Box width="100%" maxW="2000px" px={{ base: 2, md: 8 }} mx="auto">
           {(() => {
             let noOfLines = 2;
             if ([25, 50, 100].includes(subOptions.words)) noOfLines = 3;
