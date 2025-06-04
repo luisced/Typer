@@ -586,7 +586,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       >
         <Box width="100%" maxW="2000px" px={{ base: 2, md: 8 }} mx="auto">
           {(() => {
-            let noOfLines = 2;
+            let noOfLines = 1;
             if ([25, 50, 100].includes(subOptions.words)) noOfLines = 3;
             return (
               <SkeletonText
@@ -594,6 +594,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
                 spacing="4"
                 isLoaded={!isLoading}
                 skeletonHeight="32px"
+                width="100%"
+                height="100px"
               >
                 {modes.includes('code') ? (
                   <CodeEditor

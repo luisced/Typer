@@ -94,7 +94,7 @@ const MainLayout = () => {
       </Box>
 
       <Box flex="1" py={8}>
-        <Container maxW="container.xl">
+        <Container maxW="2000px">
           <Outlet />
         </Container>
       </Box>
