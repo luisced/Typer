@@ -14,7 +14,8 @@ import {
   ModalFooter,
   ModalCloseButton,
   Textarea,
-  useDisclosure
+  useDisclosure,
+  SkeletonText
 } from '@chakra-ui/react'
 import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
@@ -157,7 +158,9 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   // Fetch test content based on modes
   const fetchTestContent = async () => {
     try {
-      setIsLoading(true)
+      setIsLoading(true);
+      // Artificial delay for demo purposes (remove in production)
+      await new Promise(res => setTimeout(res, 200));
       let content: string[] = []
 
       // Determine the mode based on the active modes
@@ -172,10 +175,16 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         mode = 'words'
       }
 
+      // Determine word count logic
+      const isWords = modes.includes('words');
+      const isTime = modes.includes('time');
+      const onlyTime = isTime && !isWords;
+      const wordCount = onlyTime ? 200 : subOptions.words;
+
       // Get content based on mode
       const response = await getTestContent(
         mode,
-        modes.includes('words') ? subOptions.words : 1,
+        wordCount,
         difficulty,
         modes.includes('numbers'),
         modes.includes('punctuation')
@@ -510,37 +519,22 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setTotalWords(total);
   }, [userInput, text, setWrittenWords, setTotalWords]);
 
-  // Focus warning logic
+  // Focus warning logic: show overlay only when window/tab loses focus
   useEffect(() => {
-    const handleFocus = () => setIsFocusWarning(false);
-    const handleBlur = () => setIsFocusWarning(true);
-    const node = mainContainerRef.current;
-    if (node) {
-      node.addEventListener('focusin', handleFocus);
-      node.addEventListener('focusout', handleBlur);
-    }
+    const onWindowBlur = () => setIsFocusWarning(true)
+    const onWindowFocus = () => setIsFocusWarning(false)
+    window.addEventListener('blur', onWindowBlur)
+    window.addEventListener('focus', onWindowFocus)
     return () => {
-      if (node) {
-        node.removeEventListener('focusin', handleFocus);
-        node.removeEventListener('focusout', handleBlur);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    // Show warning on mount if not focused
-    setTimeout(() => {
-      if (document.activeElement !== inputRef.current) {
-        setIsFocusWarning(true);
-      }
-    }, 200);
-  }, []);
+      window.removeEventListener('blur', onWindowBlur)
+      window.removeEventListener('focus', onWindowFocus)
+    }
+  }, [])
 
   // Handle user typing in the hidden input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (finished) return;
     handleInput(e.target.value);
-    setIsFocusWarning(false);
   };
 
   return (
@@ -554,8 +548,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       ref={mainContainerRef}
       tabIndex={-1}
       position="relative"
-      onFocusCapture={() => setIsFocusWarning(false)}
-      onBlurCapture={() => setIsFocusWarning(true)}
     >
       {/* Focus Warning Overlay */}
       {isFocusWarning && (
@@ -577,55 +569,61 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         style={{ cursor: 'default' }}
         userSelect="none"
       >
-        {isLoading ? (
-          <Text>Loading test content...</Text>
-        ) : (
-          <>
-            {modes.includes('code') && (
-              <CodeEditor
-                code={text}
-                language={getLanguageForHighlighting()}
-                userInput={userInput}
-                isActive={isActive || userInput.length === 0}
-                onClick={handleTextClick}
-              />
-            )}
-            {(modes.includes('words') || modes.includes('time')) && (
-              <Box
-                ref={textContainerRef}
-                data-typing-area="true"
-                fontFamily={customization.font || 'mono'}
-                fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
-                color="gray.600"
-                textAlign="left"
-                width="100%"
-                overflowY="hidden"
-                px={{ base: 2, md: 8 }}
-                py={4}
-                letterSpacing="1px"
-                maxW="1200px"
-                maxHeight="190px" 
-                lineHeight={2}
-                userSelect="none"
-                whiteSpace="pre-wrap"
-                wordBreak="break-word"
-                bg="transparent"
-                cursor="default"
-                sx={{
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                  '&::-webkit-scrollbar': { display: 'none' },
-                  WebkitUserSelect: 'none',
-                  MozUserSelect: 'none',
-                  msUserSelect: 'none',
-                  pointerEvents: 'none',
-                }}
+        <Box w="800px" px={{ base: 2, md: 8 }}>
+          {(() => {
+            let noOfLines = 2;
+            if ([25, 50, 100].includes(subOptions.words)) noOfLines = 3;
+            return (
+              <SkeletonText
+                noOfLines={noOfLines}
+                spacing="4"
+                isLoaded={!isLoading}
+                skeletonHeight="32px"
               >
-                {renderText()}
-              </Box>
-            )}
-          </>
-        )}
+                {modes.includes('code') ? (
+                  <CodeEditor
+                    code={text}
+                    language={getLanguageForHighlighting()}
+                    userInput={userInput}
+                    isActive={isActive || userInput.length === 0}
+                    onClick={handleTextClick}
+                  />
+                ) : (
+                  <Box
+                    ref={textContainerRef}
+                    data-typing-area="true"
+                    fontFamily={customization.font || 'mono'}
+                    fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
+                    color="gray.600"
+                    textAlign="left"
+                    width="100%"
+                    overflowY="hidden"
+                    letterSpacing="1px"
+                    maxW="100%"
+                    maxHeight="190px"
+                    lineHeight={2}
+                    userSelect="none"
+                    whiteSpace="pre-wrap"
+                    wordBreak="break-word"
+                    bg="transparent"
+                    cursor="default"
+                    sx={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      '&::-webkit-scrollbar': { display: 'none' },
+                      WebkitUserSelect: 'none',
+                      MozUserSelect: 'none',
+                      msUserSelect: 'none',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {renderText()}
+                  </Box>
+                )}
+              </SkeletonText>
+            );
+          })()}
+        </Box>
       </Flex>
 
       {/* Restart Test Icon with Hover Banner */}

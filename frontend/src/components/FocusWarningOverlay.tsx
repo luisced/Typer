@@ -1,30 +1,24 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Box } from '@chakra-ui/react';
 
-interface FocusWarningOverlayProps {
+interface Props {
   mainContainerRef: React.RefObject<HTMLDivElement | null>;
   onFocus: () => void;
 }
 
-export const FocusWarningOverlay: React.FC<FocusWarningOverlayProps> = ({ mainContainerRef, onFocus }) => {
-  const handleAnyKey = (e: KeyboardEvent | MouseEvent) => {
-    // Check if the click/keypress is within the OptionBar
-    const optionBar = document.querySelector('[data-option-bar="true"]');
-    if (optionBar?.contains(e.target as Node)) {
-      return; // Don't trigger focus if clicking OptionBar
+export const FocusWarningOverlay: React.FC<Props> = ({ mainContainerRef, onFocus }) => {
+  const handleAnyInteraction = (e: MouseEvent | KeyboardEvent) => {
+    if (mainContainerRef.current?.contains(e.target as Node)) {
+      onFocus();
     }
-    
-    // For all other areas, trigger the focus
-    onFocus();
   };
 
   useEffect(() => {
-    // Add event listeners to the window to catch all interactions
-    window.addEventListener('keydown', handleAnyKey);
-    window.addEventListener('mousedown', handleAnyKey);
+    window.addEventListener('mousedown', handleAnyInteraction);
+    window.addEventListener('keydown', handleAnyInteraction);
     return () => {
-      window.removeEventListener('keydown', handleAnyKey);
-      window.removeEventListener('mousedown', handleAnyKey);
+      window.removeEventListener('mousedown', handleAnyInteraction);
+      window.removeEventListener('keydown', handleAnyInteraction);
     };
   }, [onFocus]);
 
@@ -41,7 +35,6 @@ export const FocusWarningOverlay: React.FC<FocusWarningOverlayProps> = ({ mainCo
       display="flex"
       alignItems="center"
       justifyContent="center"
-      pointerEvents="none" // Make the overlay non-interactive
     >
       <Box
         color="yellow.300"
@@ -50,14 +43,9 @@ export const FocusWarningOverlay: React.FC<FocusWarningOverlayProps> = ({ mainCo
         fontSize="2xl"
         fontWeight="bold"
         textAlign="center"
-        tabIndex={0}
-        role="alertdialog"
-        aria-modal="true"
-        fontFamily="monospace"
-        pointerEvents="auto" // Make only the message box interactive
         cursor="pointer"
         _hover={{ color: 'yellow.200' }}
-        transition="color 0.2s ease"
+        onClick={onFocus}
       >
         Click or press any key to focus
       </Box>
