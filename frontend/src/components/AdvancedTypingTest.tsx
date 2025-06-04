@@ -304,7 +304,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       const response = await getTestContent(
         modeParam,
         wordCountParam,
-        'medium',
+        'easy',
         modes.includes('numbers'),
         modes.includes('punctuation'),
         langCode
@@ -316,7 +316,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 
       // Set up text and reset states
       setText(content.join(' '))
-      setTimer((prev) => prev) // timer was set in shouldFetchTestContent
       setFinished(false)
       setIsLoading(false)
       setShowResults(false)
@@ -402,7 +401,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       return
     }
     const interval = setInterval(() => {
-      setTimer((t) => t - 1)
+      setTimer(timer - 1)
     }, 1000)
     return () => clearInterval(interval)
   }, [isActive, timer, finished, modes, endTest])

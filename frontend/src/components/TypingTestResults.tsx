@@ -104,9 +104,7 @@ export const TypingTestResults: React.FC = () => {
         mb={6}
         isLoaded={!isLoading}
       >
-        <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color={yellow}>
-          Your Typing Test Summary
-        </Text>
+        <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color={yellow}>Your Typing Test Summary</Text>
       </SkeletonText>
 
       <Divider borderColor={gridDivider} mb={8} w="100%" maxW="1100px" />

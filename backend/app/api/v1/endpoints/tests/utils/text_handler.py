@@ -153,19 +153,34 @@ class NLTKTextHandler:
         # Contamos frecuencias
         self.word_freq = Counter(filtered)
 
-        # Tomamos los N + M + H más comunes
-        slice_size = self.easy_count + self.medium_count + self.hard_count
-        most_common = self.word_freq.most_common(slice_size)
-        ranked_words = [w for w, _ in most_common]
-
-        # Particiones en tres niveles
-        self._easy_words = ranked_words[: self.easy_count]
-        self._medium_words = ranked_words[
-            self.easy_count : self.easy_count + self.medium_count
-        ]
-        self._hard_words = ranked_words[
-            self.easy_count + self.medium_count : self.easy_count + self.medium_count + self.hard_count
-        ]
+        # Get all words sorted by frequency
+        all_words_by_freq = [w for w, _ in self.word_freq.most_common()]
+        
+        # Filter words by length for different difficulty levels
+        easy_candidates = [w for w in all_words_by_freq if 3 <= len(w) <= 5]  # Short, simple words
+        medium_candidates = [w for w in all_words_by_freq if 6 <= len(w) <= 8]  # Medium length
+        hard_candidates = [w for w in all_words_by_freq if len(w) >= 9]  # Long, complex words
+        
+        # Take the most frequent words from each category
+        self._easy_words = easy_candidates[:self.easy_count] if len(easy_candidates) >= self.easy_count else easy_candidates
+        self._medium_words = medium_candidates[:self.medium_count] if len(medium_candidates) >= self.medium_count else medium_candidates
+        self._hard_words = hard_candidates[:self.hard_count] if len(hard_candidates) >= self.hard_count else hard_candidates
+        
+        # If we don't have enough words in a category, pad with words from other categories
+        if len(self._easy_words) < self.easy_count:
+            needed = self.easy_count - len(self._easy_words)
+            extra = [w for w in all_words_by_freq if w not in self._easy_words][:needed]
+            self._easy_words.extend(extra)
+            
+        if len(self._medium_words) < self.medium_count:
+            needed = self.medium_count - len(self._medium_words)
+            extra = [w for w in all_words_by_freq if w not in self._easy_words and w not in self._medium_words][:needed]
+            self._medium_words.extend(extra)
+            
+        if len(self._hard_words) < self.hard_count:
+            needed = self.hard_count - len(self._hard_words)
+            extra = [w for w in all_words_by_freq if w not in self._easy_words and w not in self._medium_words and w not in self._hard_words][:needed]
+            self._hard_words.extend(extra)
 
         logger.info(
             f"[{self.lang}] Leveled words → "
