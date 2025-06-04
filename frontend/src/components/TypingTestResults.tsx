@@ -47,7 +47,8 @@ export const TypingTestResults: React.FC = () => {
 
   useEffect(() => {
     if (tests) {
-      const data = tests.map((test, index) => ({
+      const reversed = [...tests].reverse();
+      const data = reversed.map((test, index) => ({
         sessionIndex: index + 1,
         wpm: test.wpm,
         rawWpm: test.raw_wpm,

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react'
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -19,18 +19,20 @@ import {
 import CodeEditor from './CodeEditor'
 import { FaRedo } from 'react-icons/fa'
 import type { CustomizationConfig } from '../store/customizationStore'
-import { saveTest } from '../api/tests'
+import { saveTest, getTestContent } from '../api/tests'
 import { useNavigate } from 'react-router-dom'
 import { Cursor } from './Cursor'
 import type { CursorVariant } from './Cursor'
 import { FocusWarningOverlay } from './FocusWarningOverlay'
+import { calcGrossWpm, calcNetWpm, calcAccuracy } from '../utils/typing'
+import { useTypingEngine } from '../hooks/useTypingEngine'
 
 const punctuationSample =
   "Hello, world! How are you? Let's test: commas, periods. Semicolons; colons: dashes - and more!"
 const numberSample =
   "In 2023, the population was 7.9 billion. 1, 2, 3, 4, 5... The code 123-456-7890 is a phone number."
 const codeSamples: Record<string, string> = {
-  Python: `def greet(name):\n    print(f\"Hello, {name}!\")\n\ngreet(\"World\")`,
+  Python: `def greet(name):\n    print(f"Hello, {name}!")\n\ngreet("World")`,
   JavaScript: `function greet(name) {\n  console.log('Hello, ' + name + '!');\n}\ngreet('World');`
 }
 const wordBank = [
@@ -105,103 +107,138 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 }) => {
   // Typing test state
   const [text, setText] = useState<string>('')
-  const [userInput, setUserInput] = useState<string>('')
-  const [isActive, setIsActive] = useState<boolean>(false)
   const [showResults, setShowResults] = useState<boolean>(false)
   const [topic, setTopic] = useState<string>('')
-  const [startTime, setStartTime] = useState<number | null>(null)
   const [finished, setFinished] = useState<boolean>(false)
   const [customText, setCustomText] = useState<string>('')
   const [isZenMode, setIsZenMode] = useState<boolean>(false)
   const [duration, setDuration] = useState<number>(0)
   const [restarts, setRestarts] = useState<number>(0)
   const [consistency, setConsistency] = useState<number>(0)
-  const [charStats, setCharStats] = useState<Array<{ char: string; correct: boolean; time: number }>>([])
-  const [keystrokes, setKeystrokes] = useState<{ correct: number; incorrect: number }>({ correct: 0, incorrect: 0 })
-  const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
-  const [charLogs, setCharLogs] = useState<Record<string, {
-    attempts: number;
-    errors: number;
-    total_time: number;
-    last_attempt_time: number | null;
-  }>>({})
+  const [testResult, setTestResult] = useState<any>(null)
+  const [isFocusWarning, setIsFocusWarning] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const mainContainerRef = useRef<HTMLDivElement>(null)
+  const textContainerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const navigate = useNavigate()
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const [testResult, setTestResult] = useState<any>(null)
-  const [isFocusWarning, setIsFocusWarning] = useState(false)
-  const mainContainerRef = useRef<HTMLDivElement>(null)
+  const [mode, setMode] = useState<'words' | 'time' | 'code' | 'zen' | 'custom' | 'punctuation' | 'numbers'>('words')
+  const [wordCount, setWordCount] = useState<number>(25)
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy')
+  const [includeNumbers, setIncludeNumbers] = useState<boolean>(false)
+  const [includePunctuation, setIncludePunctuation] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0)
+  const [currentCharIndex, setCurrentCharIndex] = useState<number>(0)
+  const [words, setWords] = useState<string[]>([])
+  const [startTime, setStartTime] = useState<number | null>(null)
+  const [endTime, setEndTime] = useState<number | null>(null)
+  const [errorCount, setErrorCount] = useState<number>(0)
+  const [inputValue, setInputValue] = useState<string>('')
 
-  // Ref for the text container
-  const textContainerRef = useRef<HTMLDivElement>(null)
+  // Use the typing engine hook
+  const {
+    userInput,
+    isActive,
+    finished: typingFinished,
+    startTime: typingStartTime,
+    keystrokes: typingKeystrokes,
+    charLogs: typingCharLogs,
+    stats,
+    grossWpm,
+    netWpm,
+    handleInput,
+    reset: resetTypingEngine,
+    endTest: endTypingTest
+  } = useTypingEngine(text);
 
-  // Generate random words, optionally with punctuation/numbers
-  const generateWords = (count: number, withPunctuation = false, withNumbers = false) => {
-    let words: string[] = []
-    const punctuations = [',', '.', ';', ':', '!', '?']
-    for (let i = 0; i < count; i++) {
-      let word = wordBank[Math.floor(Math.random() * wordBank.length)]
-      if (withNumbers && Math.random() < 0.15) {
-        word = String(Math.floor(Math.random() * 10000))
+  // Fetch test content based on modes
+  const fetchTestContent = async () => {
+    try {
+      setIsLoading(true)
+      let content: string[] = []
+
+      // Determine the mode based on the active modes
+      let mode: 'words' | 'sentences' | 'code' | 'zen' | 'custom' = 'words'
+      if (modes.includes('code')) {
+        mode = 'code'
+      } else if (modes.includes('zen')) {
+        mode = 'zen'
+      } else if (modes.includes('custom')) {
+        mode = 'custom'
+      } else if (modes.includes('words')) {
+        mode = 'words'
       }
-      if (withPunctuation && Math.random() < 0.2) {
-        word += punctuations[Math.floor(Math.random() * punctuations.length)]
-      }
-      words.push(word)
+
+      // Get content based on mode
+      const response = await getTestContent(
+        mode,
+        modes.includes('words') ? subOptions.words : 1,
+        difficulty,
+        modes.includes('numbers'),
+        modes.includes('punctuation')
+      )
+      content = Array.isArray(response.content) ? response.content : [response.content]
+
+      setText(content.join(' '))
+      setCurrentWordIndex(0)
+      setCurrentCharIndex(0)
+      setStartTime(Date.now())
+      setEndTime(null)
+      setWpm(0)
+      setAccuracy(0)
+      setErrorCount(0)
+      setShowResults(false)
+      setInputValue('')
+      setWords(content)
+    } catch (error) {
+      console.error('Error fetching test content:', error)
+      setError('Failed to load test content. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
-    return words.join(' ')
   }
 
   // Update text/timer on mode/subOption/codeLanguage change
   useEffect(() => {
-    setUserInput('')
-    setIsActive(false)
-    setShowResults(false)
-    setStartTime(null)
-    setFinished(false)
-    setIsZenMode(modes.includes('zen'))
-
-    const withPunctuation = modes.includes('punctuation')
-    const withNumbers = modes.includes('numbers')
-
     if (modes.includes('code')) {
       setText(codeSamples[codeLanguage] || codeSamples['Python'])
       setTimer(DEFAULT_TIME)
     } else if (modes.includes('zen')) {
-      setText(sampleTexts[Math.floor(Math.random() * sampleTexts.length)])
+      fetchTestContent()
       setTimer(Infinity)
     } else if (modes.includes('custom')) {
       setText(customText)
       setTimer(DEFAULT_TIME)
     } else if (modes.includes('words') && modes.includes('time')) {
-      setText(generateWords(subOptions.words, withPunctuation, withNumbers))
+      fetchTestContent()
       setTimer(subOptions.time)
     } else if (modes.includes('words')) {
-      setText(generateWords(subOptions.words, withPunctuation, withNumbers))
+      fetchTestContent()
       setTimer(Infinity)
     } else if (modes.includes('time')) {
-      setText(generateWords(200, withPunctuation, withNumbers))
+      fetchTestContent()
       setTimer(subOptions.time)
     } else if (modes.includes('punctuation')) {
-      setText(punctuationSample)
+      fetchTestContent()
       setTimer(DEFAULT_TIME)
     } else if (modes.includes('numbers')) {
-      setText(numberSample)
+      fetchTestContent()
       setTimer(DEFAULT_TIME)
     } else {
-      setText(sampleTexts[Math.floor(Math.random() * sampleTexts.length)])
+      fetchTestContent()
       setTimer(DEFAULT_TIME)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modes, subOptions, codeLanguage])
+  }, [modes, subOptions, codeLanguage, customText, setTimer])
 
   // Update text when customText changes in custom mode
   useEffect(() => {
     if (modes.includes('custom')) {
-      setText(customText)
+      setText(customText);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customText])
+  }, [modes, customText]);
 
   // Scroll the active character into view only when it goes below the visible area
   useEffect(() => {
@@ -241,80 +278,39 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     if (isActive) inputRef.current?.focus()
   }, [isActive])
 
-  // Decrement timer every second (unless in zen mode or already finished)
+  // Timer effect with functional update
   useEffect(() => {
-    if (!isActive || finished || modes.includes('zen')) return
+    if (!isActive || finished || modes.includes('zen')) return;
     if (timer === 0) {
       if (!finished) {
-        endTest()
+        endTest();
       }
-      return
+      return;
     }
     const interval = setInterval(() => {
-      setTimer(timer - 1)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [isActive, timer, finished, modes])
+      setTimer(timer - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isActive, timer, finished, modes]);
 
-  const inputRef = useRef<HTMLInputElement>(null)
+  // Check for test completion conditions
+  useEffect(() => {
+    if (finished || !isActive) return;
 
-  // Handle user typing in the hidden input
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isActive && !finished) {
-      setIsActive(true)
-      const now = Date.now()
-      setStartTime(now)
-      setLastKeystrokeTime(now)
-      // Start duration tracking for words-only mode
-      if (modes.includes('words') && !modes.includes('time')) {
-        setDuration(0)
-      }
+    const isComplete = 
+      // Time mode: timer reaches 0
+      (modes.includes('time') && timer === 0) ||
+      // Words mode: all words typed
+      (modes.includes('words') && userInput.length >= text.length) ||
+      // Custom mode: all text typed
+      (modes.includes('custom') && userInput.length >= text.length) ||
+      // Code mode: all code typed
+      (modes.includes('code') && userInput.length >= text.length);
+
+    if (isComplete) {
+      endTest();
     }
-    if (finished) return
-    const value = e.target.value
-    // Prevent typing beyond the length of `text`
-    if (value.length > text.length) return
-
-    // Track keystroke timing for consistency
-    const now = Date.now()
-    if (lastKeystrokeTime) {
-      setKeystrokes(prev => ({
-        correct: prev.correct + (text[value.length - 1] === text[value.length - 2] ? 1 : 0),
-        incorrect: prev.incorrect + (text[value.length - 1] !== text[value.length - 2] ? 1 : 0)
-      }))
-    }
-    setLastKeystrokeTime(now)
-
-    // Track character-level statistics
-    const currentChar = text[value.length - 1]
-    if (currentChar) {
-      setCharStats(prev => [...prev, { char: currentChar, correct: value[value.length - 1] === currentChar, time: now - (startTime || Date.now()) }])
-      setCharLogs(prev => {
-        const charLog = prev[currentChar] || {
-          attempts: 0,
-          errors: 0,
-          total_time: 0,
-          last_attempt_time: null
-        }
-        
-        const isCorrect = value[value.length - 1] === currentChar
-        const timeSinceLastAttempt = charLog.last_attempt_time ? now - charLog.last_attempt_time : 0
-        
-        return {
-          ...prev,
-          [currentChar]: {
-            attempts: charLog.attempts + 1,
-            errors: charLog.errors + (isCorrect ? 0 : 1),
-            total_time: charLog.total_time + timeSinceLastAttempt,
-            last_attempt_time: now
-          }
-        }
-      })
-    }
-
-    setUserInput(value)
-    setIsFocusWarning(false)
-  }
+  }, [finished, isActive, modes, timer, userInput.length, text.length]);
 
   // Update duration for words-only mode
   useEffect(() => {
@@ -329,112 +325,78 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     return () => clearInterval(interval)
   }, [isActive, finished, modes, startTime])
 
-  // Recompute WPM, accuracy, and check for test completion
+  // Update parent component with WPM and accuracy
   useEffect(() => {
-    let correct = 0
-    let err = 0
-    for (let i = 0; i < userInput.length; i++) {
-      if (userInput[i] === text[i]) correct++
-      else err++
-    }
-    setAccuracy(userInput.length ? Math.round((correct / userInput.length) * 100) : 100)
-    if (isActive && startTime) {
-      const elapsed = (Date.now() - startTime) / 60000
-      setWpm(elapsed > 0 ? Math.round((correct / 5) / elapsed) : 0)
-    }
-    // If fully typed and not in zen mode, end the test
-    if (
-      userInput.length === text.length &&
-      !modes.includes('zen') &&
-      !finished &&
-      isActive
-    ) {
-      endTest()
-    }
-  }, [userInput, text, isActive, startTime, modes, finished])
+    const rawWpm = Math.round(grossWpm);
+    const accuracy = Number((stats.currentCorrect / (stats.currentCorrect + stats.currentIncorrect) * 100).toFixed(2));
+    const netWpm = Math.round(rawWpm * accuracy / 100);
+    setWpm(netWpm);
+    setAccuracy(accuracy);
+  }, [grossWpm, stats, setWpm, setAccuracy]);
 
   // Calculate consistency based on keystroke timing
   const calculateConsistency = (keystrokes: { correct: number; incorrect: number }): number => {
-    const total = keystrokes.correct + keystrokes.incorrect
-    if (total < 2) return 0;
-    const withinRange = Math.abs(keystrokes.correct - keystrokes.incorrect) / total <= 0.2
-    return withinRange ? 100 : 0;
+    const total = keystrokes.correct + keystrokes.incorrect;
+    if (total === 0) return 0;
+    return Math.round((keystrokes.correct / total) * 100);
   };
 
   const endTest = async () => {
-    setFinished(true)
-    setIsActive(false)
+    if (finished) return; // Guard against double-submission
+    endTypingTest();
+    setFinished(true);
     
     // Calculate final duration
     const finalDuration = modes.includes('time') 
       ? subOptions.time 
       : modes.includes('words') 
         ? duration 
-        : DEFAULT_TIME
-
-    // Calculate raw WPM (all characters / 5 / minutes)
-    const rawWpm = startTime 
-      ? Math.round((userInput.length / 5) / (finalDuration / 60) * 100) / 100
-      : 0
-
-    // Calculate character statistics
-    let correct = 0
-    let incorrect = 0
-    let extra = 0
-    let missed = 0
-
-    for (let i = 0; i < Math.max(text.length, userInput.length); i++) {
-      if (i >= text.length) {
-        extra++ // User typed more than the text
-      } else if (i >= userInput.length) {
-        missed++ // User didn't type enough
-      } else if (userInput[i] === text[i]) {
-        correct++
-      } else {
-        incorrect++
-      }
-    }
+        : DEFAULT_TIME;
 
     // Calculate consistency
-    const consistencyScore = calculateConsistency(keystrokes)
+    const consistencyScore = calculateConsistency(typingKeystrokes);
+
+    // Calculate final stats
+    const rawWpm = Math.round(grossWpm);
+    const finalAccuracy = Number((stats.currentCorrect / (stats.currentCorrect + stats.currentIncorrect) * 100).toFixed(2));
+    const finalWpm = Math.round(rawWpm * finalAccuracy / 100);
 
     // Format character logs for API
-    const formattedCharLogs = Object.entries(charLogs).map(([char, stats]) => ({
+    const formattedCharLogs = Object.entries(typingCharLogs).map(([char, log]) => ({
       char,
-      attempts: stats.attempts,
-      errors: stats.errors,
-      total_time: stats.total_time
-    }))
+      attempts: log.attempts,
+      errors: log.errors,
+      total_time: log.deltas.reduce((sum, delta) => sum + delta, 0)
+    }));
 
     const result: TestResult = {
-      wpm: rawWpm,
-      accuracy: Math.round((correct / userInput.length) * 100),
+      wpm: finalWpm,
+      accuracy: finalAccuracy,
       time: finalDuration,
-      keystrokes,
-      charStats,
+      keystrokes: typingKeystrokes,
+      charStats: Object.entries(typingCharLogs).map(([char, log]) => ({
+        char,
+        correct: log.attempts - log.errors > 0,
+        time: log.deltas[log.deltas.length - 1] || 0
+      }))
     };
 
     try {
       const saved = await saveTest({
-        wpm: rawWpm,
+        wpm: finalWpm,
         raw_wpm: rawWpm,
-        accuracy: Math.round((correct / userInput.length) * 100),
+        accuracy: finalAccuracy,
         consistency: consistencyScore,
         test_type: modes.join(','),
         duration: finalDuration,
         char_logs: formattedCharLogs,
         timestamp: new Date().toISOString(),
-        chars: {
-          correct,
-          incorrect,
-          extra,
-          missed
-        },
+        chars: stats,
         restarts
-      })
-      setTestResult(result)
-      onOpen()
-      navigate('/results')
+      });
+      setTestResult(result);
+      onOpen();
+      navigate('/results');
     } catch (error) {
       toast({
         title: 'Error saving test results',
@@ -442,13 +404,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         status: 'error',
         duration: 3000,
         isClosable: true,
-      })
+      });
     }
-  }
+  };
 
   // Reset everything and pick a new passage/words based on modes
   const handleReset = useCallback(() => {
-    setRestarts(prev => prev + 1)
+    setRestarts(prev => prev + 1);
+    resetTypingEngine();
     if (modes.includes('punctuation')) {
       setText(punctuationSample)
       setTimer(DEFAULT_TIME)
@@ -456,13 +419,13 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       setText(numberSample)
       setTimer(DEFAULT_TIME)
     } else if (modes.includes('words') && modes.includes('time')) {
-      setText(generateWords(subOptions.words))
+      fetchTestContent()
       setTimer(subOptions.time)
     } else if (modes.includes('words')) {
-      setText(generateWords(subOptions.words))
+      fetchTestContent()
       setTimer(Infinity)
     } else if (modes.includes('time')) {
-      setText(generateWords(200))
+      fetchTestContent()
       setTimer(subOptions.time)
     } else if (modes.includes('code')) {
       setText(codeSamples[codeLanguage] || codeSamples['Python'])
@@ -474,20 +437,13 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       setText(customText)
       setTimer(DEFAULT_TIME)
     }
-    setUserInput('')
     setWpm(0)
     setAccuracy(100)
-    setIsActive(false)
     setShowResults(false)
-    setStartTime(null)
     setFinished(false)
-    setCharStats([])
-    setKeystrokes({ correct: 0, incorrect: 0 })
-    setCharLogs({}) // Reset character logs
     // Refocus after a short delay
     setTimeout(() => inputRef.current?.focus(), 100)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modes, subOptions, codeLanguage, customText])
+  }, [modes, subOptions, codeLanguage, customText, resetTypingEngine, setWpm, setAccuracy, setTimer]);
 
   // Renders each character in its own <Text as="span"> with data-index
   const renderText = () => {
@@ -537,11 +493,10 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 
   const handleTextClick = () => {
     if (!isActive && !finished) {
-      setIsActive(true)
-      setStartTime(Date.now())
+      handleInput(''); // This will initialize the typing engine
     }
-    inputRef.current?.focus()
-  }
+    inputRef.current?.focus();
+  };
 
   const getLanguageForHighlighting = () => {
     return codeLanguage.toLowerCase() === 'javascript' ? 'javascript' : 'python'
@@ -581,6 +536,13 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     }, 200);
   }, []);
 
+  // Handle user typing in the hidden input
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (finished) return;
+    handleInput(e.target.value);
+    setIsFocusWarning(false);
+  };
+
   return (
     <Flex 
       direction="column"  
@@ -592,6 +554,8 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       ref={mainContainerRef}
       tabIndex={-1}
       position="relative"
+      onFocusCapture={() => setIsFocusWarning(false)}
+      onBlurCapture={() => setIsFocusWarning(true)}
     >
       {/* Focus Warning Overlay */}
       {isFocusWarning && (
@@ -613,47 +577,53 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
         style={{ cursor: 'default' }}
         userSelect="none"
       >
-        {modes.includes('code') && (
-          <CodeEditor
-            code={text}
-            language={getLanguageForHighlighting()}
-            userInput={userInput}
-            isActive={isActive || userInput.length === 0}
-            onClick={handleTextClick}
-          />
-        )}
-        {(modes.includes('words') || modes.includes('time')) && (
-          <Box
-            ref={textContainerRef}
-            fontFamily={customization.font || 'mono'}
-            fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
-            color="gray.600"
-            textAlign="left"
-            width="100%"
-            overflowY="hidden"
-            px={{ base: 2, md: 8 }}
-            py={4}
-            letterSpacing="1px"
-            maxW="1200px"
-            maxHeight="190px" 
-            lineHeight={2}
-            userSelect="none"
-            whiteSpace="pre-wrap"
-            wordBreak="break-word"
-            bg="transparent"
-            cursor="default"
-            sx={{
-              scrollbarWidth: 'none', // Firefox
-              msOverflowStyle: 'none', // IE/Edge
-              '&::-webkit-scrollbar': { display: 'none' }, // Chrome/Safari
-              WebkitUserSelect: 'none', // Safari
-              MozUserSelect: 'none', // Firefox
-              msUserSelect: 'none', // IE/Edge
-              pointerEvents: 'none', // Prevent manual scrolling
-            }}
-          >
-            {renderText()}
-          </Box>
+        {isLoading ? (
+          <Text>Loading test content...</Text>
+        ) : (
+          <>
+            {modes.includes('code') && (
+              <CodeEditor
+                code={text}
+                language={getLanguageForHighlighting()}
+                userInput={userInput}
+                isActive={isActive || userInput.length === 0}
+                onClick={handleTextClick}
+              />
+            )}
+            {(modes.includes('words') || modes.includes('time')) && (
+              <Box
+                ref={textContainerRef}
+                fontFamily={customization.font || 'mono'}
+                fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
+                color="gray.600"
+                textAlign="left"
+                width="100%"
+                overflowY="hidden"
+                px={{ base: 2, md: 8 }}
+                py={4}
+                letterSpacing="1px"
+                maxW="1200px"
+                maxHeight="190px" 
+                lineHeight={2}
+                userSelect="none"
+                whiteSpace="pre-wrap"
+                wordBreak="break-word"
+                bg="transparent"
+                cursor="default"
+                sx={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  '&::-webkit-scrollbar': { display: 'none' },
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                  msUserSelect: 'none',
+                  pointerEvents: 'none',
+                }}
+              >
+                {renderText()}
+              </Box>
+            )}
+          </>
         )}
       </Flex>
 
@@ -672,6 +642,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           alignItems="center"
           justifyContent="center"
           role="group"
+          isDisabled={isLoading}
         >
           <FaRedo size={24} color="gray.400" />
           <Box
@@ -731,8 +702,6 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
           />
         </Flex>
       )}
-
-      
     </Flex>
   )
 }

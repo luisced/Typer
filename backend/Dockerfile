@@ -25,6 +25,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel \
     && pip install -r requirements.txt
 
+# Descargamos los datos de NLTK necesarios
+RUN python -c "import nltk; nltk.download('brown'); nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('gutenberg')"
+
 # Copiamos el resto del código (en dev usaremos volumen para sobreescribir)
 COPY . .
 

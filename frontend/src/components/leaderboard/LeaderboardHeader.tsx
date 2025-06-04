@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Box, Heading, Text, Button, Icon } from '@chakra-ui/react';
+import { Flex, Box, Heading, Text, Icon } from '@chakra-ui/react';
 import { FaKeyboard } from 'react-icons/fa';
 import { useLeaderboard } from '../../context/LeaderboardContext';
 

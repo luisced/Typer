@@ -28,4 +28,8 @@ class UserTestRead(UserTestCreate):
     id: str
     user_id: str
     timestamp: datetime
-    char_logs: List[UserTestCharLogRead] 
+    char_logs: List[UserTestCharLogRead]
+
+class TestContent(BaseModel):
+    content: str
+    type: str  # "words" or "sentences" 

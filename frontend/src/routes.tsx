@@ -6,12 +6,13 @@ import SettingsCard from './components/SettingsCard'
 import Scoreboard from './pages/Scoreboard'
 import Register from './pages/Register'
 import Login from './pages/Login'
-import { useState } from 'react'
 import { TypingTestResults } from './components/TypingTestResults'
+import { useState } from 'react'
 
 const AppRoutes = () => {
   const [model, setModel] = useState('gemini')
   const [apiKey, setApiKey] = useState('')
+  
   return (
     <Routes>
       <Route element={<MainLayout />}>
