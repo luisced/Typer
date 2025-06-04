@@ -73,6 +73,7 @@ const OptionBar = ({
       width="fit-content"
       mx="auto"
       transition="all 0.3s ease"
+      data-option-bar="true"
     >
       {mainOptions.map(opt => (
         <Button

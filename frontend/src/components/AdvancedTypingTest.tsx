@@ -593,6 +593,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
             {(modes.includes('words') || modes.includes('time')) && (
               <Box
                 ref={textContainerRef}
+                data-typing-area="true"
                 fontFamily={customization.font || 'mono'}
                 fontSize={customization.fontSize ? `${customization.fontSize}px` : { base: '2xl', md: '3xl' }}
                 color="gray.600"
