@@ -1,4 +1,4 @@
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict, Any
 from sqlalchemy.orm import Session
 from app.api.v1.endpoints.user import models, schemas, repository
 from app.core.security import verify_password, create_access_token, create_refresh_token, get_password_hash
@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from jose import jwt, JWTError
 from app.core.config import settings
 from app.api.v1.endpoints.user.repository import UserRepository
+from app.api.v1.endpoints.gamification.service import GamificationService
 import uuid
 
 class UserService:
@@ -239,3 +240,44 @@ class UserService:
         self.db.refresh(db_customization)
         
         return db_customization 
+
+    def get_current_user_info(self, user_id: str) -> schemas.UserInDB:
+        """
+        Get current user information including gamification data.
+        
+        Args:
+            user_id: The ID of the user
+            
+        Returns:
+            UserInDB schema with gamification info
+        """
+        user = self.get_user(user_id)
+        if not user:
+            raise ValueError("User not found")
+            
+        # Get gamification data
+        gamification_service = GamificationService(self.db)
+        level_info = gamification_service.repository.get_user_level_info(user_id)
+        if not level_info:
+            raise ValueError("User level information not found")
+        
+        # Create UserInDB instance with gamification data
+        user_data = schemas.UserInDB(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            full_name=user.full_name,
+            is_active=user.is_active,
+            roles=[role.name for role in user.roles],
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+            last_login=user.last_login,
+            profile=user.profile.__dict__ if user.profile else None,
+            oauth_accounts=[account.__dict__ for account in user.oauth_accounts],
+            current_level=level_info["current_level"],
+            current_xp=level_info["current_xp"],
+            xp_for_next_level=level_info["xp_for_next_level"],
+            xp_progress_in_level=level_info["xp_progress_in_level"]
+        )
+        
+        return user_data 

@@ -18,6 +18,7 @@ class UserTest(Base):
     restarts = Column(Integer, nullable=False, default=0)  
     language = Column(String, nullable=False, default='en')  # Language code (en, es, etc.)
     char_logs = relationship("UserTestCharLog", back_populates="test", cascade="all, delete-orphan")
+    xp_logs = relationship("XPLog", back_populates="test", cascade="all, delete-orphan")
 
     # Add constraints
     __table_args__ = (

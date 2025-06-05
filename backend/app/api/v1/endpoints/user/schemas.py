@@ -39,8 +39,12 @@ class UserProfileUpdate(UserProfileBase):
 class UserInDB(UserBase):
     id: str
     is_active: bool
-    is_superuser: bool
+    roles: List[RoleType]
     created_at: datetime
+    current_level: int
+    current_xp: int
+    xp_for_next_level: int
+    xp_progress_in_level: int
     updated_at: datetime
     last_login: Optional[datetime] = None
     profile: Optional[UserProfileBase] = None

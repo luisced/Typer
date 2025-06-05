@@ -395,28 +395,32 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
 
   // Timer effect
   useEffect(() => {
-    if (!isActive || finished || modes.includes('zen')) return
-    if (timer === 0) {
-      if (!finished) endTest()
-      return
-    }
+    if (!isActive || finished || modes.includes('zen') || timer <= 0) return
+    
     const interval = setInterval(() => {
       setTimer(timer - 1)
     }, 1000)
+    
     return () => clearInterval(interval)
-  }, [isActive, timer, finished, modes, endTest])
+  }, [isActive, finished, modes, timer, setTimer])
 
-  // Check for completion (words/time/custom/code)
+  // Check if timer reached 0 and end test
+  useEffect(() => {
+    if (timer === 0 && isActive && !finished && modes.includes('time')) {
+      endTest()
+    }
+  }, [timer, isActive, finished, modes, endTest])
+
+  // Check for completion (words/custom/code modes)
   useEffect(() => {
     if (finished || !isActive) return
     const isComplete =
-      (modes.includes('time') && timer === 0) ||
       (modes.includes('words') && userInput.length >= text.length) ||
       (modes.includes('custom') && userInput.length >= text.length) ||
       (modes.includes('code') && userInput.length >= text.length)
 
     if (isComplete) endTest()
-  }, [finished, isActive, modes, timer, userInput.length, text.length, endTest])
+  }, [finished, isActive, modes, userInput.length, text.length, endTest])
 
   // Update duration in words‐only mode
   useEffect(() => {
@@ -442,6 +446,14 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     setWpm(net)
     setAccuracy(acc)
   }, [grossWpm, stats, setWpm, setAccuracy])
+
+  // Reset test when time option changes
+  useEffect(() => {
+    if (modes.includes('time')) {
+      handleReset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subOptions.time]);
 
   // Render each character as a span
   const renderText = () => {
@@ -531,7 +543,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
       tabIndex={-1}
       position="relative"
       width="100%"
-      maxW="2000px"
+      maxW="1800px"
       mx="auto"
     >
       {/* Focus Warning Overlay */}

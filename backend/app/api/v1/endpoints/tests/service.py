@@ -1,8 +1,13 @@
 from app.api.v1.endpoints.tests.repository import UserTestRepository
 from app.api.v1.endpoints.tests import schemas, models
 from app.api.v1.endpoints.tests.utils import NLTKTextHandler
+from app.api.v1.endpoints.gamification.service import GamificationService
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
+import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserTestService:
     # Cache for text handlers by language to avoid rebuilding corpora on every request
@@ -10,6 +15,7 @@ class UserTestService:
 
     def __init__(self, db: Session):
         self.repository = UserTestRepository(db)
+        self.db = db
 
     def _get_text_handler(self, lang: str) -> NLTKTextHandler:
         """Get or create a cached text handler for the specified language."""
@@ -18,7 +24,74 @@ class UserTestService:
         return self._text_handlers[lang]
 
     def create_test(self, user_id: str, test: schemas.UserTestCreate) -> models.UserTest:
-        return self.repository.create_test(user_id, test)
+        created_test = self.repository.create_test(user_id, test)
+        
+        # Process gamification rewards
+        self._process_gamification_rewards(user_id, created_test, test)
+        
+        return created_test
+    
+    def _process_gamification_rewards(self, user_id: str, test: models.UserTest, test_data: schemas.UserTestCreate):
+        """Process gamification rewards for a completed test."""
+        try:
+            logger.info(f"Processing gamification rewards for user {user_id}, test {test.id}")
+            gamification_service = GamificationService(self.db)
+            
+            # Determine difficulty based on test parameters
+            difficulty = self._determine_test_difficulty(test_data)
+            logger.info(f"Test difficulty: {difficulty}")
+            
+            # Calculate word count and character count from char_logs
+            word_count = len(test_data.char_logs)  # Each char_log represents a character typed
+            character_count = sum(1 for log in test_data.char_logs if log.errors == 0)  # Count only correctly typed characters
+            logger.info(f"Word count: {word_count}, Character count: {character_count}")
+            
+            # Process the test completion and award XP
+            level_up_response = gamification_service.process_test_completion(
+                user_id=user_id,
+                test_id=test.id,
+                wpm=int(test.wpm),
+                accuracy=test.accuracy,
+                difficulty=difficulty,
+                duration_seconds=test.duration,
+                word_count=word_count,
+                character_count=character_count,
+                test_date=test.timestamp or datetime.datetime.now(datetime.timezone.utc)
+            )
+            
+            # Log XP breakdown
+            logger.info(f"XP Breakdown:")
+            logger.info(f"- Base XP: {level_up_response.xp_breakdown.base_xp}")
+            logger.info(f"- WPM Bonus: {level_up_response.xp_breakdown.wpm_bonus}")
+            logger.info(f"- Accuracy Bonus: {level_up_response.xp_breakdown.accuracy_bonus}")
+            logger.info(f"- Difficulty Bonus: {level_up_response.xp_breakdown.difficulty_bonus}")
+            logger.info(f"- Length Bonus: {level_up_response.xp_breakdown.length_bonus}")
+            logger.info(f"- Streak Bonus: {level_up_response.xp_breakdown.streak_bonus}")
+            logger.info(f"Total XP Earned: {level_up_response.xp_breakdown.total_xp}")
+            
+            # Log level up information
+            if level_up_response.leveled_up:
+                logger.info(f"User {user_id} leveled up from {level_up_response.old_level} to {level_up_response.new_level}!")
+            else:
+                logger.info(f"User {user_id} XP updated - Level: {level_up_response.new_level}")
+            
+        except Exception as e:
+            # Log the error but don't fail the test creation
+            logger.error(f"Error processing gamification rewards: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
+    def _determine_test_difficulty(self, test_data: schemas.UserTestCreate) -> str:
+        """Determine test difficulty based on test parameters."""
+        # This is a simple heuristic - you can make it more sophisticated
+        test_type = test_data.test_type
+        
+        if 'hard' in test_type.lower():
+            return 'hard'
+        elif 'medium' in test_type.lower() or 'punctuation' in test_type.lower() or 'numbers' in test_type.lower():
+            return 'medium'
+        else:
+            return 'easy'
 
     def get_tests_for_user(self, user_id: str) -> List[models.UserTest]:
         return self.repository.get_tests_for_user(user_id)
@@ -52,11 +125,18 @@ class UserTestService:
                 level = "easy"
             if not count:
                 count = 25
-            words = text_handler.get_random_words(
-                level=level,
-                count=count,
-                # include_numbers and include_punctuation are not used in get_random_words
-            )
+            if include_numbers or include_punctuation:
+                words = text_handler.get_random_tokens(
+                    level=level,
+                    count=count,
+                    with_numbers=include_numbers,
+                    with_punctuation=include_punctuation,
+                )
+            else:
+                words = text_handler.get_random_words(
+                    level=level,
+                    count=count,
+                )
             return schemas.TestContent(content=" ".join(words), type="words")
         elif mode == "sentences":
             if not count:

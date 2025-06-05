@@ -1,43 +1,40 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+
+from app.core.config import settings
+from app.api.api import api_router
+from app.core.database import Base, engine
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Typer API",
-    description="Typer API with FastAPI",
-    version="1.0.0",
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="Backend API for the Typer application",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  
+    allow_origins=["http://localhost:5173"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Typer API"}
+    return {
+        "message": "Welcome to Typer API",
+        "version": settings.VERSION,
+        "docs_url": "/docs"
+    }
 
 @app.get("/health")
-async def health_check(db: Session = Depends(get_db)):
-    try:
-        # Try to execute a simple query to check database connectivity
-        db.execute("SELECT 1")
-        return {
-            "status": "healthy",
-            "database": "connected"
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(e)
-        }
-
-# Import and include routers
-from app.api.v1.api import api_router
-app.include_router(api_router, prefix="/api/v1") 
+async def health_check():
+    return {"status": "healthy"} 

@@ -19,10 +19,10 @@ const ProfileCard = ({ user }: { user?: any }) => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Calculate level progress (placeholder for now)
-  const level = 1
-  const progress = 0
-  const nextLevel = 100
+  // Calculate level progress
+  const level = user?.current_level || 1
+  const progress = user?.xp_progress_in_level || 0
+  const nextLevel = user?.xp_for_next_level || 100
 
   return (
     <Box
@@ -47,9 +47,16 @@ const ProfileCard = ({ user }: { user?: any }) => {
             Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
           </Text>
           <Flex align="center" w="100%" gap={2}>
-            <Text color="gray.400" fontSize="md">{level}</Text>
-            <Progress value={progress} size="sm" flex={1} bg="gray.700" colorScheme="gray" borderRadius="full" />
-            <Text color="gray.400" fontSize="sm">{progress}/{nextLevel}</Text>
+            <Text color="gray.400" fontSize="md">Level {level}</Text>
+            <Progress 
+              value={(progress / nextLevel) * 100} 
+              size="sm" 
+              flex={1} 
+              bg="gray.700" 
+              colorScheme="blue" 
+              borderRadius="full" 
+            />
+            <Text color="gray.400" fontSize="sm">{progress}/{nextLevel} XP</Text>
           </Flex>
         </Flex>
         {/* Divider */}

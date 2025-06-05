@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from app.core.config import settings
 from app.api.v1.endpoints.user.models import RoleType, SiteSettings, AuditLog
+from app.api.v1.endpoints.gamification.service import GamificationService
 import logging
 
 # Configure logging
@@ -71,8 +72,12 @@ def login(
     return user_service.create_tokens(user)
 
 @router.get("/me", response_model=schemas.UserInDB)
-def read_user_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+def read_user_me(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user_service = service.UserService(db)
+    return user_service.get_current_user_info(current_user.id)
 
 @router.put("/me", response_model=schemas.UserInDB)
 def update_user_me(
