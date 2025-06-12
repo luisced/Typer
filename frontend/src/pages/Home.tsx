@@ -33,6 +33,7 @@ const Home: React.FC = () => {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [customTestContent, setCustomTestContent] = useState<string>('')
 
   const { config: customization } = useCustomizationStore()
 
@@ -52,7 +53,9 @@ const Home: React.FC = () => {
     fetchUser()
   }, [])
 
-
+  const handleStartCustomTest = (content: string) => {
+    setCustomTestContent(content)
+  }
 
   return (
     <Flex direction="column" bg="transparent" align="center" justify="flex-start" px={2}>
@@ -65,6 +68,7 @@ const Home: React.FC = () => {
         setLanguage={setLanguage}
         codeLanguage={codeLanguage}
         setCodeLanguage={setCodeLanguage}
+        onStartCustomTest={handleStartCustomTest}
       />
       <Stats wpm={wpm} accuracy={accuracy} timer={timer} modes={modes} writtenWords={writtenWords} totalWords={totalWords} />
       <Box >
@@ -87,6 +91,7 @@ const Home: React.FC = () => {
             setWrittenWords={setWrittenWords}
             setTotalWords={setTotalWords}
             customization={customization}
+            customTestContent={customTestContent}
           />
         </Flex>
       </Box>

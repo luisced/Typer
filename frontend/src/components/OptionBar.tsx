@@ -1,7 +1,10 @@
 import { Box, Flex, Button, Icon, Select, useColorModeValue, Collapse } from '@chakra-ui/react'
 import { FaAt, FaHashtag, FaClock, FaFont, FaCode, FaMountain, FaWrench, FaTimes } from 'react-icons/fa'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Cookies from 'js-cookie'
+import CustomTestModal from './CustomTestModal'
+import type { CustomTestOptions } from './CustomTestModal'
+import { getCustomTestContent } from '../api/tests'
 
 const mainOptions = [
   { key: 'punctuation', label: 'punctuation', icon: FaAt },
@@ -40,7 +43,7 @@ const LANGUAGE_TO_CODE: Record<string, string> = {
 const codeLanguages = ['Python', 'JavaScript']
 
 const OptionBar = ({
-  modes, setModes, subOptions, setSubOptions, language, setLanguage, codeLanguage, setCodeLanguage
+  modes, setModes, subOptions, setSubOptions, language, setLanguage, codeLanguage, setCodeLanguage, onStartCustomTest
 }: {
   modes: string[]
   setModes: (m: string[]) => void
@@ -50,11 +53,15 @@ const OptionBar = ({
   setLanguage: (l: string) => void
   codeLanguage: string
   setCodeLanguage: (l: string) => void
+  onStartCustomTest?: (content: string) => void
 }) => {
   const bg = useColorModeValue('gray.800', 'gray.800')
   const activeColor = 'yellow.400'
   const inactiveColor = 'gray.400'
   const subInactive = 'gray.500'
+  const [customModalOpen, setCustomModalOpen] = useState(false);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
 
   // Whenever the user picks a new language from the dropdown:
   const handleLanguageChange = (iso: string) => {
@@ -94,8 +101,10 @@ const OptionBar = ({
 
   const handleModeClick = (mode: string) => {
     if (exclusiveOptions.includes(mode)) {
-      // Exclusive modes replace all other modes
       setModes([mode])
+      if (mode === 'custom') {
+        setCustomModalOpen(true)
+      }
     } else {
       // Mixable modes can be toggled
       if (modes.includes(mode)) {
@@ -113,122 +122,154 @@ const OptionBar = ({
     }
   }
 
+  const handleCustomTestSubmit = async (opts: CustomTestOptions) => {
+    setCustomLoading(true);
+    setCustomError(null);
+    try {
+      if (opts.customText) {
+        onStartCustomTest?.(opts.customText);
+      } else {
+        // Use the API abstraction
+        const res = await getCustomTestContent({
+          count: opts.count,
+          level: opts.level,
+          include_numbers: opts.include_numbers,
+          include_punctuation: opts.include_punctuation,
+          lang: opts.lang
+        });
+        const content = res.content;
+        onStartCustomTest?.(content);
+      }
+    } catch (err: any) {
+      setCustomError(err?.response?.data?.detail || 'Failed to load custom test content');
+    } finally {
+      setCustomLoading(false);
+    }
+  };
+
   return (
-    <Flex
-      align="center"
-      bg={bg}
-      borderRadius="lg"
-      px={4}
-      py={2}
-      mt={6}
-      mb={4}
-      boxShadow="md"
-      gap={2}
-      width="fit-content"
-      mx="auto"
-      transition="all 0.3s ease"
-      data-option-bar="true"
-    >
-      {mainOptions.map(opt => (
-        <Button
-          key={opt.key}
-          onClick={() => handleModeClick(opt.key)}
-          leftIcon={<Icon as={opt.icon} />}
-          variant="ghost"
-          color={modes.includes(opt.key) ? activeColor : inactiveColor}
-          fontWeight={modes.includes(opt.key) ? 'bold' : 'normal'}
-          _hover={{ color: activeColor, borderColor: 'transparent' }}
-          _active={{ color: activeColor, borderColor: 'transparent' }}
-          px={3}
-          py={1}
-          fontSize="md"
-          transition="all 0.2s ease"
-        >
-          {opt.label}
-        </Button>
-      ))}
-      
-      {/* Sub-options with smooth transitions */}
-      <Box transition="all 0.3s ease" overflow="hidden">
-        {/* Sub-options for time/words */}
-        {modes.includes('time') && (
-          <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
-            {timeOptions.map(t => (
-              <Button
-                key={t}
-                onClick={() => setSubOptions({ ...subOptions, time: t })}
-                variant="ghost"
-                color={subOptions.time === t ? activeColor : subInactive}
-                fontWeight={subOptions.time === t ? 'bold' : 'normal'}
-                fontSize="md"
-                px={2}
-                py={1}
-                transition="all 0.2s ease"
-              >
-                {t}
-              </Button>
-            ))}
-          </Flex>
-        )}
-        {modes.includes('words') && (
-          <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
-            {wordOptions.map(w => (
-              <Button
-                key={w}
-                onClick={() => setSubOptions({ ...subOptions, words: w })}
-                variant="ghost"
-                color={subOptions.words === w ? activeColor : subInactive}
-                fontWeight={subOptions.words === w ? 'bold' : 'normal'}
-                fontSize="md"
-                px={2}
-                py={1}
-                transition="all 0.2s ease"
-              >
-                {w}
-              </Button>
-            ))}
-          </Flex>
-        )}
-        {/* Sub-options for code */}
-        {modes.includes('code') && (
-          <Select
-            value={codeLanguage}
-            onChange={e => setCodeLanguage(e.target.value)}
-            bg="gray.900"
-            color="yellow.400"
-            border="none"
-            fontWeight="bold"
+    <>
+      <Flex
+        align="center"
+        bg={bg}
+        borderRadius="lg"
+        px={4}
+        py={2}
+        mt={6}
+        mb={4}
+        boxShadow="md"
+        gap={2}
+        width="fit-content"
+        mx="auto"
+        transition="all 0.3s ease"
+        data-option-bar="true"
+      >
+        {mainOptions.map(opt => (
+          <Button
+            key={opt.key}
+            onClick={() => handleModeClick(opt.key)}
+            leftIcon={<Icon as={opt.icon} />}
+            variant="ghost"
+            color={modes.includes(opt.key) ? activeColor : inactiveColor}
+            fontWeight={modes.includes(opt.key) ? 'bold' : 'normal'}
+            _hover={{ color: activeColor, borderColor: 'transparent' }}
+            _active={{ color: activeColor, borderColor: 'transparent' }}
+            px={3}
+            py={1}
             fontSize="md"
-            width="auto"
-            ml={4}
-            _focus={{ outline: 'none' }}
             transition="all 0.2s ease"
           >
-            {codeLanguages.map(l => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </Select>
-        )}
-      </Box>
-      
-      {/* Language picker */}
-      <Select
-        value={language}
-        onChange={(e) => handleLanguageChange(e.target.value)}
-        size="sm"
-        width="120px"
-        color={inactiveColor}
-      >
-        {Object.entries(REVERSE_LANGUAGE_MAP).map(([code, label]) => (
-          <option key={code} value={code}>
-            {label}
-          </option>
+            {opt.label}
+          </Button>
         ))}
-      </Select>
-      <Button variant="ghost" color={inactiveColor} px={2} py={1} ml={2} fontSize="lg" transition="all 0.2s ease">
-        <Icon as={FaTimes} />
-      </Button>
-    </Flex>
+        
+        {/* Sub-options with smooth transitions */}
+        <Box transition="all 0.3s ease" overflow="hidden">
+          {/* Sub-options for time/words */}
+          {modes.includes('time') && (
+            <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
+              {timeOptions.map(t => (
+                <Button
+                  key={t}
+                  onClick={() => setSubOptions({ ...subOptions, time: t })}
+                  variant="ghost"
+                  color={subOptions.time === t ? activeColor : subInactive}
+                  fontWeight={subOptions.time === t ? 'bold' : 'normal'}
+                  fontSize="md"
+                  px={2}
+                  py={1}
+                  transition="all 0.2s ease"
+                >
+                  {t}
+                </Button>
+              ))}
+            </Flex>
+          )}
+          {modes.includes('words') && (
+            <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
+              {wordOptions.map(w => (
+                <Button
+                  key={w}
+                  onClick={() => setSubOptions({ ...subOptions, words: w })}
+                  variant="ghost"
+                  color={subOptions.words === w ? activeColor : subInactive}
+                  fontWeight={subOptions.words === w ? 'bold' : 'normal'}
+                  fontSize="md"
+                  px={2}
+                  py={1}
+                  transition="all 0.2s ease"
+                >
+                  {w}
+                </Button>
+              ))}
+            </Flex>
+          )}
+          {/* Sub-options for code */}
+          {modes.includes('code') && (
+            <Select
+              value={codeLanguage}
+              onChange={e => setCodeLanguage(e.target.value)}
+              bg="gray.900"
+              color="yellow.400"
+              border="none"
+              fontWeight="bold"
+              fontSize="md"
+              width="auto"
+              ml={4}
+              _focus={{ outline: 'none' }}
+              transition="all 0.2s ease"
+            >
+              {codeLanguages.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </Select>
+          )}
+        </Box>
+        
+        {/* Language picker */}
+        <Select
+          value={language}
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          size="sm"
+          width="120px"
+          color={inactiveColor}
+        >
+          {Object.entries(REVERSE_LANGUAGE_MAP).map(([code, label]) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <Button variant="ghost" color={inactiveColor} px={2} py={1} ml={2} fontSize="lg" transition="all 0.2s ease">
+          <Icon as={FaTimes} />
+        </Button>
+      </Flex>
+      <CustomTestModal
+        isOpen={customModalOpen}
+        onClose={() => setCustomModalOpen(false)}
+        onSubmit={handleCustomTestSubmit}
+      />
+    </>
   )
 }
 

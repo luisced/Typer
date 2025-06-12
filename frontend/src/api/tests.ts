@@ -83,4 +83,22 @@ export const getTestContent = async (
 
   const response = await axios.get(`${API_URL}/tests/content?${params.toString()}`);
   return response.data;
+};
+
+// Specific function for custom test content with better typing
+export const getCustomTestContent = async (params: {
+  count: number;
+  level: string;
+  include_numbers: boolean;
+  include_punctuation: boolean;
+  lang: string;
+}): Promise<TestContent> => {
+  return getTestContent(
+    'custom',
+    params.count,
+    params.level as 'easy' | 'medium' | 'hard',
+    params.include_numbers,
+    params.include_punctuation,
+    params.lang
+  );
 }; 

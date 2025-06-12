@@ -44,6 +44,7 @@ interface AdvancedTypingTestProps {
   setWrittenWords: (n: number) => void
   setTotalWords: (n: number) => void
   customization: CustomizationConfig
+  customTestContent?: string
 }
 
 interface TestResult {
@@ -79,6 +80,7 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
   setWrittenWords,
   setTotalWords,
   customization,
+  customTestContent,
 }) => {
   // Track whether the first content fetch has occurred
   const initialRequestMade = useRef(false)
@@ -123,6 +125,25 @@ const AdvancedTypingTest: React.FC<AdvancedTypingTestProps> = ({
     if (total === 0) return 0
     return Math.round((keys.correct / total) * 100)
   }
+
+  // Handle custom test content from parent
+  useEffect(() => {
+    if (customTestContent && customTestContent !== text) {
+      setCustomText(customTestContent)
+      setText(customTestContent)
+      setFinished(false)
+      setIsLoading(false)
+      setShowResults(false)
+      setDuration(0)
+      setWpm(0)
+      setAccuracy(100)
+      setWrittenWords(0)
+      setTotalWords(0)
+      resetTypingEngine()
+      setTimer(DEFAULT_TIME)
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [customTestContent, text, resetTypingEngine, setWpm, setAccuracy, setWrittenWords, setTotalWords, setTimer])
 
   // === endTest needs to be declared before any useEffect that references it ===
   const endTest = useCallback(async () => {
