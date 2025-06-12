@@ -32,6 +32,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
+import KeyboardVisualization from "./KeyboardVisualization";
 
 export const TypingTestResults: React.FC = () => {
   const { tests, isLoading, error } = useTests();
@@ -45,6 +46,31 @@ export const TypingTestResults: React.FC = () => {
   const [chartData, setChartData] = useState<
     Array<{ sessionIndex: number; wpm: number; rawWpm: number; errors: number }>
   >([]);
+
+  // Convert char_logs from API format to keyboard component format
+  const convertCharLogsForKeyboard = (charLogs: any[]) => {
+    if (!charLogs || !Array.isArray(charLogs)) return {};
+    
+    const converted: Record<string, { attempts: number; errors: number; deltas: number[]; lastAttemptTime: number | null }> = {};
+    
+    charLogs.forEach((log) => {
+      if (log.char && typeof log.attempts === 'number' && typeof log.errors === 'number') {
+        // Convert total_time to an array of deltas (approximation)
+        // Since we don't have individual deltas, we'll create a single delta
+        const avgDelta = log.total_time / (log.attempts || 1);
+        const deltas = Array(log.attempts).fill(avgDelta);
+        
+        converted[log.char.toLowerCase()] = {
+          attempts: log.attempts,
+          errors: log.errors,
+          deltas: deltas,
+          lastAttemptTime: Date.now() // Approximation since we don't have this data
+        };
+      }
+    });
+    
+    return converted;
+  };
 
   useEffect(() => {
     if (tests) {
@@ -232,7 +258,7 @@ export const TypingTestResults: React.FC = () => {
               {latest
                 ? latest.test_type
                     .split(",")
-                    .map((t) => t.trim())
+                    .map((t: string) => t.trim())
                     .join(" / ")
                 : "--"}
             </Badge>
@@ -407,6 +433,21 @@ export const TypingTestResults: React.FC = () => {
           </ResponsiveContainer>
         </Skeleton>
       </Box>
+
+      {/* Keyboard Visualization Section */}
+      {latest && latest.char_logs && latest.char_logs.length > 0 && (
+        <Box
+          w="100%"
+          maxW="1100px"
+          mb={10}
+        >
+          <Skeleton isLoaded={!isLoading} height="400px">
+            <KeyboardVisualization 
+              charLogs={convertCharLogsForKeyboard(latest.char_logs)}
+            />
+          </Skeleton>
+        </Box>
+      )}
 
       {/* Try Again Button */}
       <Box mb={8}>

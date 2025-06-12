@@ -1,151 +1,148 @@
-import { Box, Flex, Button, Icon, Select, useColorModeValue, Collapse } from '@chakra-ui/react'
-import { FaAt, FaHashtag, FaClock, FaFont, FaCode, FaMountain, FaWrench, FaTimes } from 'react-icons/fa'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, memo } from 'react'
+import {
+  Box,
+  Flex,
+  Button,
+  Icon,
+  Select,
+  useColorModeValue,
+} from '@chakra-ui/react'
+import {
+  FaAt,
+  FaHashtag,
+  FaClock,
+  FaFont,
+  FaCode,
+  FaMountain,
+  FaWrench,
+  FaTimes,
+} from 'react-icons/fa'
 import Cookies from 'js-cookie'
-import CustomTestModal from './CustomTestModal'
-import type { CustomTestOptions } from './CustomTestModal'
+import CustomTestModal, { type CustomTestOptions } from './CustomTestModal'
 import { getCustomTestContent } from '../api/tests'
 
-const mainOptions = [
-  { key: 'punctuation', label: 'punctuation', icon: FaAt },
-  { key: 'numbers', label: 'numbers', icon: FaHashtag },
-  { key: 'time', label: 'time', icon: FaClock },
-  { key: 'words', label: 'words', icon: FaFont },
-  { key: 'code', label: 'code', icon: FaCode },
-  { key: 'zen', label: 'zen', icon: FaMountain },
-  { key: 'custom', label: 'custom', icon: FaWrench },
-]
+// Define mode types
+export type ModeKey = 'punctuation' | 'numbers' | 'time' | 'words' | 'code' | 'zen' | 'custom'
 
-// Options that can be mixed together
-const mixableOptions = ['punctuation', 'numbers', 'time', 'words']
-// Options that are exclusive (can't be mixed)
-const exclusiveOptions = ['code', 'zen', 'custom']
+// Button configuration
+const MODE_CONFIG: Record<ModeKey, { label: string; icon: React.ElementType }> = {
+  punctuation: { label: 'Punctuation', icon: FaAt },
+  numbers: { label: 'Numbers', icon: FaHashtag },
+  time: { label: 'Time', icon: FaClock },
+  words: { label: 'Words', icon: FaFont },
+  code: { label: 'Code', icon: FaCode },
+  zen: { label: 'Zen', icon: FaMountain },
+  custom: { label: 'Custom', icon: FaWrench },
+}
 
-const timeOptions = [15, 30, 60]
-const wordOptions = [10, 25, 50, 100]
+const MIXABLE: ModeKey[] = ['punctuation', 'numbers', 'time', 'words']
+const EXCLUSIVE: ModeKey[] = ['code', 'zen', 'custom']
+const TIME_OPTIONS = [15, 30, 60] as const
+const WORD_OPTIONS = [10, 25, 50, 100] as const
+const LANGUAGE_MAP: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+}
+const LANG_COMPAT: Record<string, string> = {
+  English: 'en',
+  Spanish: 'es',
+  French: 'fr',
+  German: 'de',
+}
+const CODE_LANGUAGES = ['Python', 'JavaScript']
 
-// Maps ISO → Full name
-const REVERSE_LANGUAGE_MAP: Record<string, string> = {
-  en: "English",
-  es: "Spanish",
-  fr: "French",
-  de: "German",
-};
+interface SubOptions {
+  time: typeof TIME_OPTIONS[number]
+  words: typeof WORD_OPTIONS[number]
+}
 
-// Maps Full name → ISO (for backward compatibility if you previously saved names)
-const LANGUAGE_TO_CODE: Record<string, string> = {
-  English: "en",
-  Spanish: "es",
-  French: "fr",
-  German: "de",
-};
-
-const codeLanguages = ['Python', 'JavaScript']
-
-const OptionBar = ({
-  modes, setModes, subOptions, setSubOptions, language, setLanguage, codeLanguage, setCodeLanguage, onStartCustomTest
-}: {
-  modes: string[]
-  setModes: (m: string[]) => void
-  subOptions: { time: number, words: number }
-  setSubOptions: (opts: { time: number, words: number }) => void
+interface OptionBarProps {
+  modes: ModeKey[]
+  setModes: (modes: ModeKey[]) => void
+  subOptions: SubOptions
+  setSubOptions: (opts: SubOptions) => void
   language: string
-  setLanguage: (l: string) => void
+  setLanguage: (lang: string) => void
   codeLanguage: string
-  setCodeLanguage: (l: string) => void
+  setCodeLanguage: (lang: string) => void
   onStartCustomTest?: (content: string) => void
+}
+
+const OptionBar: React.FC<OptionBarProps> = memo(({
+  modes,
+  setModes,
+  subOptions,
+  setSubOptions,
+  language,
+  setLanguage,
+  codeLanguage,
+  setCodeLanguage,
+  onStartCustomTest,
 }) => {
   const bg = useColorModeValue('gray.800', 'gray.800')
   const activeColor = 'yellow.400'
   const inactiveColor = 'gray.400'
-  const subInactive = 'gray.500'
-  const [customModalOpen, setCustomModalOpen] = useState(false);
-  const [customLoading, setCustomLoading] = useState(false);
-  const [customError, setCustomError] = useState<string | null>(null);
+  const subInactiveColor = 'gray.500'
 
-  // Whenever the user picks a new language from the dropdown:
-  const handleLanguageChange = (iso: string) => {
-    setLanguage(iso); // Always store ISO code in state
-    // Write the ISO code to cookie so it persists:
-    Cookies.set('typingTestLanguage', iso, { expires: 365 });
-  };
+  const [isCustomOpen, setCustomOpen] = useState(false)
+  const [loadingCustom, setLoadingCustom] = useState(false)
+  const [errorCustom, setErrorCustom] = useState<string | null>(null)
+
+  // Handle persisted language
+  const handleLanguageChange = useCallback((iso: string) => {
+    setLanguage(iso)
+    Cookies.set('typingTestLanguage', iso, { expires: 365 })
+  }, [setLanguage])
 
   useEffect(() => {
-    // On mount, try to load the cookie value:
-    const saved = Cookies.get('typingTestLanguage');
-    if (!saved) {
-      // No cookie found → set default to 'en'
-      setLanguage('en');
-      Cookies.set('typingTestLanguage', 'en', { expires: 365 });
-      return;
-    }
+    const saved = Cookies.get('typingTestLanguage')
+    if (!saved) return handleLanguageChange('en')
+    if (LANGUAGE_MAP[saved]) return setLanguage(saved)
+    if (LANG_COMPAT[saved]) return handleLanguageChange(LANG_COMPAT[saved])
+    handleLanguageChange('en')
+  }, [handleLanguageChange, setLanguage])
 
-    // If the saved value matches a valid ISO code, use it directly:
-    if (REVERSE_LANGUAGE_MAP[saved]) {
-      setLanguage(saved);
-      return;
-    }
-
-    // Convert full name to ISO code if needed (backward compatibility)
-    if (LANGUAGE_TO_CODE[saved]) {
-      const isoCode = LANGUAGE_TO_CODE[saved];
-      setLanguage(isoCode);
-      Cookies.set('typingTestLanguage', isoCode, { expires: 365 }); // Update cookie to use ISO code
-      return;
-    }
-
-    // If it's neither a known code nor a known full name, default to 'en'
-    setLanguage('en');
-    Cookies.set('typingTestLanguage', 'en', { expires: 365 });
-  }, [setLanguage]);
-
-  const handleModeClick = (mode: string) => {
-    if (exclusiveOptions.includes(mode)) {
+  const handleModeToggle = useCallback((mode: ModeKey) => {
+    if (EXCLUSIVE.includes(mode)) {
       setModes([mode])
-      if (mode === 'custom') {
-        setCustomModalOpen(true)
+      if (mode === 'custom') setCustomOpen(true)
+      return
+    }
+    // Mixable
+    if (modes.includes(mode)) {
+      // Prevent deselect both time & words
+      if ((mode === 'time' && !modes.includes('words')) || (mode === 'words' && !modes.includes('time'))) {
+        return
       }
+      setModes(modes.filter(m => m !== mode))
     } else {
-      // Mixable modes can be toggled
-      if (modes.includes(mode)) {
-        // Prevent both 'words' and 'time' from being deselected
-        if ((mode === 'words' && !modes.includes('time')) || (mode === 'time' && !modes.includes('words'))) {
-          // Do not allow deselecting the last one
-          return
-        }
-        setModes(modes.filter(m => m !== mode))
-      } else {
-        // Add the mode, but remove any exclusive modes first
-        const filteredModes = modes.filter(m => !exclusiveOptions.includes(m))
-        setModes([...filteredModes, mode])
-      }
+      const filtered = modes.filter(m => !EXCLUSIVE.includes(m))
+      setModes([...filtered, mode])
+    }
+  }, [modes, setModes])
+
+  const submitCustom = async (opts: CustomTestOptions) => {
+    setLoadingCustom(true)
+    setErrorCustom(null)
+    try {
+      const content = opts.customText
+        ? opts.customText
+        : (await getCustomTestContent({
+            count: opts.count,
+            level: opts.level,
+            include_numbers: opts.include_numbers,
+            include_punctuation: opts.include_punctuation,
+            lang: opts.lang,
+          })).content
+      onStartCustomTest?.(content)
+    } catch (err: any) {
+      setErrorCustom(err?.response?.data?.detail || 'Error fetching custom test')
+    } finally {
+      setLoadingCustom(false)
     }
   }
-
-  const handleCustomTestSubmit = async (opts: CustomTestOptions) => {
-    setCustomLoading(true);
-    setCustomError(null);
-    try {
-      if (opts.customText) {
-        onStartCustomTest?.(opts.customText);
-      } else {
-        // Use the API abstraction
-        const res = await getCustomTestContent({
-          count: opts.count,
-          level: opts.level,
-          include_numbers: opts.include_numbers,
-          include_punctuation: opts.include_punctuation,
-          lang: opts.lang
-        });
-        const content = res.content;
-        onStartCustomTest?.(content);
-      }
-    } catch (err: any) {
-      setCustomError(err?.response?.data?.detail || 'Failed to load custom test content');
-    } finally {
-      setCustomLoading(false);
-    }
-  };
 
   return (
     <>
@@ -161,44 +158,36 @@ const OptionBar = ({
         gap={2}
         width="fit-content"
         mx="auto"
-        transition="all 0.3s ease"
-        data-option-bar="true"
       >
-        {mainOptions.map(opt => (
+        {Object.entries(MODE_CONFIG).map(([key, { label, icon }]) => (
           <Button
-            key={opt.key}
-            onClick={() => handleModeClick(opt.key)}
-            leftIcon={<Icon as={opt.icon} />}
+            key={key}
+            onClick={() => handleModeToggle(key as ModeKey)}
+            leftIcon={<Icon as={icon} />}
             variant="ghost"
-            color={modes.includes(opt.key) ? activeColor : inactiveColor}
-            fontWeight={modes.includes(opt.key) ? 'bold' : 'normal'}
-            _hover={{ color: activeColor, borderColor: 'transparent' }}
-            _active={{ color: activeColor, borderColor: 'transparent' }}
+            color={modes.includes(key as ModeKey) ? activeColor : inactiveColor}
+            fontWeight={modes.includes(key as ModeKey) ? 'bold' : 'normal'}
+            _hover={{ color: activeColor }}
             px={3}
             py={1}
             fontSize="md"
-            transition="all 0.2s ease"
+            transition="0.2s"
           >
-            {opt.label}
+            {label}
           </Button>
         ))}
-        
-        {/* Sub-options with smooth transitions */}
-        <Box transition="all 0.3s ease" overflow="hidden">
-          {/* Sub-options for time/words */}
+
+        <Box overflow="hidden" transition="0.3s">
           {modes.includes('time') && (
-            <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
-              {timeOptions.map(t => (
+            <Flex ml={4} gap={1}>
+              {TIME_OPTIONS.map(t => (
                 <Button
                   key={t}
                   onClick={() => setSubOptions({ ...subOptions, time: t })}
                   variant="ghost"
-                  color={subOptions.time === t ? activeColor : subInactive}
+                  color={subOptions.time === t ? activeColor : subInactiveColor}
                   fontWeight={subOptions.time === t ? 'bold' : 'normal'}
-                  fontSize="md"
                   px={2}
-                  py={1}
-                  transition="all 0.2s ease"
                 >
                   {t}
                 </Button>
@@ -206,71 +195,79 @@ const OptionBar = ({
             </Flex>
           )}
           {modes.includes('words') && (
-            <Flex gap={1} ml={4} animation="fadeIn 0.3s ease">
-              {wordOptions.map(w => (
+            <Flex ml={4} gap={1}>
+              {WORD_OPTIONS.map(w => (
                 <Button
                   key={w}
                   onClick={() => setSubOptions({ ...subOptions, words: w })}
                   variant="ghost"
-                  color={subOptions.words === w ? activeColor : subInactive}
+                  color={subOptions.words === w ? activeColor : subInactiveColor}
                   fontWeight={subOptions.words === w ? 'bold' : 'normal'}
-                  fontSize="md"
                   px={2}
-                  py={1}
-                  transition="all 0.2s ease"
                 >
                   {w}
                 </Button>
               ))}
             </Flex>
           )}
-          {/* Sub-options for code */}
           {modes.includes('code') && (
             <Select
               value={codeLanguage}
               onChange={e => setCodeLanguage(e.target.value)}
-              bg="gray.900"
-              color="yellow.400"
-              border="none"
-              fontWeight="bold"
-              fontSize="md"
-              width="auto"
+              variant="unstyled"
               ml={4}
-              _focus={{ outline: 'none' }}
-              transition="all 0.2s ease"
+              fontWeight="bold"
+              size="sm"
+              width="120px"
             >
-              {codeLanguages.map(l => (
-                <option key={l} value={l}>{l}</option>
+              {CODE_LANGUAGES.map(lang => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
               ))}
             </Select>
           )}
         </Box>
-        
-        {/* Language picker */}
+
         <Select
           value={language}
-          onChange={(e) => handleLanguageChange(e.target.value)}
+          onChange={e => handleLanguageChange(e.target.value)}
           size="sm"
           width="120px"
-          color={inactiveColor}
+          variant="filled"
+          bg={useColorModeValue('gray.100', 'gray.700')}
+          _hover={{ bg: useColorModeValue('gray.200', 'gray.600') }}
+          borderRadius="md"
+          fontWeight="medium"
+          color={useColorModeValue('gray.800', 'gray.100')}
+          borderWidth="1px"
+          borderColor={useColorModeValue('gray.200', 'gray.600')}
+          _focus={{
+            borderColor: 'blue.400',
+            boxShadow: '0 0 0 1px var(--chakra-colors-blue-400)',
+          }}
         >
-          {Object.entries(REVERSE_LANGUAGE_MAP).map(([code, label]) => (
+          {Object.entries(LANGUAGE_MAP).map(([code, name]) => (
             <option key={code} value={code}>
-              {label}
+              {name}
             </option>
           ))}
         </Select>
-        <Button variant="ghost" color={inactiveColor} px={2} py={1} ml={2} fontSize="lg" transition="all 0.2s ease">
+
+        <Button variant="ghost" onClick={() => setModes([])} px={2} py={1}>
           <Icon as={FaTimes} />
         </Button>
       </Flex>
+
       <CustomTestModal
-        isOpen={customModalOpen}
-        onClose={() => setCustomModalOpen(false)}
-        onSubmit={handleCustomTestSubmit}
+        isOpen={isCustomOpen}
+        onClose={() => setCustomOpen(false)}
+        onSubmit={submitCustom}
+        isLoading={loadingCustom}
+        error={errorCustom}
       />
     </>
   )
-}
+})
 
-export default OptionBar 
+export default OptionBar
