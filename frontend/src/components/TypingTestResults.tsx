@@ -33,6 +33,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import KeyboardVisualization from "./KeyboardVisualization";
+import { aggregateCharLogs, convertSingleTestCharLogs } from "../utils/aggregateCharLogs";
 
 export const TypingTestResults: React.FC = () => {
   const { tests, isLoading, error } = useTests();
@@ -47,30 +48,8 @@ export const TypingTestResults: React.FC = () => {
     Array<{ sessionIndex: number; wpm: number; rawWpm: number; errors: number }>
   >([]);
 
-  // Convert char_logs from API format to keyboard component format
-  const convertCharLogsForKeyboard = (charLogs: any[]) => {
-    if (!charLogs || !Array.isArray(charLogs)) return {};
-    
-    const converted: Record<string, { attempts: number; errors: number; deltas: number[]; lastAttemptTime: number | null }> = {};
-    
-    charLogs.forEach((log) => {
-      if (log.char && typeof log.attempts === 'number' && typeof log.errors === 'number') {
-        // Convert total_time to an array of deltas (approximation)
-        // Since we don't have individual deltas, we'll create a single delta
-        const avgDelta = log.total_time / (log.attempts || 1);
-        const deltas = Array(log.attempts).fill(avgDelta);
-        
-        converted[log.char.toLowerCase()] = {
-          attempts: log.attempts,
-          errors: log.errors,
-          deltas: deltas,
-          lastAttemptTime: Date.now() // Approximation since we don't have this data
-        };
-      }
-    });
-    
-    return converted;
-  };
+  // Get aggregated char logs from all tests
+  const aggregatedCharLogs = tests ? aggregateCharLogs(tests) : {};
 
   useEffect(() => {
     if (tests) {
@@ -435,7 +414,7 @@ export const TypingTestResults: React.FC = () => {
       </Box>
 
       {/* Keyboard Visualization Section */}
-      {latest && latest.char_logs && latest.char_logs.length > 0 && (
+      {tests && tests.length > 0 && (
         <Box
           w="100%"
           maxW="1100px"
@@ -443,7 +422,9 @@ export const TypingTestResults: React.FC = () => {
         >
           <Skeleton isLoaded={!isLoading} height="400px">
             <KeyboardVisualization 
-              charLogs={convertCharLogsForKeyboard(latest.char_logs)}
+              charLogs={aggregatedCharLogs}
+              title="Your Keyboard Mastery Progress"
+              testCount={tests.length}
             />
           </Skeleton>
         </Box>

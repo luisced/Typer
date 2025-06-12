@@ -51,11 +51,15 @@ interface CharLog {
 interface KeyboardVisualizationProps {
   charLogs?: Record<string, CharLog>;
   className?: string;
+  title?: string;
+  testCount?: number;
 }
 
 const KeyboardVisualization: React.FC<KeyboardVisualizationProps> = ({
   charLogs = {},
   className = "",
+  title = "Keyboard Mastery Visualization",
+  testCount,
 }) => {
   // Color mode values
   const kbBg = useColorModeValue("#f5f5f5", "#2b2b2b");
@@ -64,15 +68,25 @@ const KeyboardVisualization: React.FC<KeyboardVisualizationProps> = ({
 
   return (
     <Box className={className}>
-      <Text 
-        fontSize="lg" 
-        color="gray.300" 
-        textAlign="center" 
-        mb={4}
-        fontFamily="mono"
-      >
-        Keyboard Mastery Visualization
-      </Text>
+      <Box textAlign="center" mb={4}>
+        <Text 
+          fontSize="lg" 
+          color="gray.300" 
+          fontFamily="mono"
+        >
+          {title}
+        </Text>
+        {testCount && (
+          <Text 
+            fontSize="sm" 
+            color="gray.500" 
+            fontFamily="mono"
+            mt={1}
+          >
+            Based on {testCount} test{testCount > 1 ? 's' : ''}
+          </Text>
+        )}
+      </Box>
       
       <Flex
         direction="column"
