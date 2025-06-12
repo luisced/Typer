@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.api.v1.endpoints.user.models import User
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_current_superuser
 from app.api.v1.endpoints.gamification import schemas
 from app.api.v1.endpoints.gamification.service import GamificationService
 
@@ -69,6 +69,119 @@ def get_my_gamification_summary(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
+
+
+# Badge endpoints
+@router.get("/me/badges", response_model=List[schemas.BadgeWithEarnedStatus])
+def get_my_badges(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all badges with earned status for current user."""
+    service = GamificationService(db)
+    return service.get_all_badges_for_user(current_user.id)
+
+
+@router.get("/me/badges/earned", response_model=List[schemas.UserBadgeRead])
+def get_my_earned_badges(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get only earned badges for current user."""
+    service = GamificationService(db)
+    from app.api.v1.endpoints.gamification.models import UserBadge
+    from sqlalchemy.orm import joinedload
+    
+    user_badges = db.query(UserBadge).options(
+        joinedload(UserBadge.badge)
+    ).filter(UserBadge.user_id == current_user.id).all()
+    
+    return [schemas.UserBadgeRead.model_validate(ub) for ub in user_badges]
+
+
+@router.get("/badges", response_model=List[schemas.BadgeRead])
+def get_all_badges(db: Session = Depends(get_db)):
+    """Get all available badges (public endpoint)."""
+    from app.api.v1.endpoints.gamification.models import Badge
+    badges = db.query(Badge).all()
+    return [schemas.BadgeRead.model_validate(badge) for badge in badges]
+
+
+@router.get("/badges/{badge_code}", response_model=schemas.BadgeRead)
+def get_badge_by_code(
+    badge_code: str,
+    db: Session = Depends(get_db)
+):
+    """Get specific badge by code (public endpoint)."""
+    from app.api.v1.endpoints.gamification.models import Badge
+    badge = db.query(Badge).filter(Badge.code == badge_code).first()
+    
+    if not badge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Badge not found"
+        )
+    
+    return schemas.BadgeRead.model_validate(badge)
+
+
+@router.get("/users/{user_id}/badges", response_model=List[schemas.UserBadgeRead])
+def get_user_badges(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get earned badges for any user (public endpoint)."""
+    from app.api.v1.endpoints.gamification.models import UserBadge
+    from sqlalchemy.orm import joinedload
+    
+    user_badges = db.query(UserBadge).options(
+        joinedload(UserBadge.badge)
+    ).filter(UserBadge.user_id == user_id).all()
+    
+    return [schemas.UserBadgeRead.model_validate(ub) for ub in user_badges]
+
+
+# Admin endpoints
+@router.post("/admin/badges", response_model=schemas.BadgeRead)
+def create_badge(
+    badge_data: schemas.BadgeCreate,
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db)
+):
+    """Create a new badge (admin only)."""
+    service = GamificationService(db)
+    
+    # Check if badge code already exists
+    from app.api.v1.endpoints.gamification.models import Badge
+    existing = db.query(Badge).filter(Badge.code == badge_data.code).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Badge with this code already exists"
+        )
+    
+    badge = service.create_badge(
+        badge_code=badge_data.code,
+        name=badge_data.name,
+        description=badge_data.description,
+        tier=badge_data.tier,
+        icon_url=badge_data.icon_url
+    )
+    
+    return schemas.BadgeRead.model_validate(badge)
+
+
+@router.post("/admin/badges/initialize")
+def initialize_default_badges(
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db)
+):
+    """Initialize default badges (admin only)."""
+    service = GamificationService(db)
+    service.initialize_default_badges()
+    db.commit()
+    
+    return {"message": "Default badges initialized successfully"}
 
 
 @router.get("/users/{user_id}/level", response_model=schemas.UserLevelInfo)

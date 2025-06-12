@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -7,13 +7,13 @@ class XPBreakdown(BaseModel):
     """
     Breakdown of XP earned from a single action.
     """
-    base_xp: int
-    wpm_bonus: int
-    accuracy_bonus: int
-    difficulty_bonus: int
-    length_bonus: int
-    streak_bonus: int
-    total_xp: int
+    base_xp: int = Field(..., description="Base XP for test completion")
+    wpm_bonus: int = Field(default=0, description="Bonus XP for WPM performance")
+    accuracy_bonus: int = Field(default=0, description="Bonus XP for accuracy")
+    difficulty_bonus: int = Field(default=0, description="Bonus XP for difficulty level")
+    length_bonus: int = Field(default=0, description="Bonus XP for test length")
+    streak_bonus: int = Field(default=0, description="Bonus XP for maintaining streak")
+    total_xp: int = Field(..., description="Total XP earned")
 
 
 class UserLevelInfo(BaseModel):
@@ -56,7 +56,7 @@ class XPLogRead(BaseModel):
     """
     id: int
     user_id: str
-    test_id: Optional[str]
+    test_id: Optional[str] = None
     xp_earned: int
     base_xp: int
     wpm_bonus: int
@@ -65,7 +65,7 @@ class XPLogRead(BaseModel):
     length_bonus: int
     streak_bonus: int
     reason: str
-    details: Optional[str]
+    details: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -89,15 +89,56 @@ class XPLogCreate(BaseModel):
     details: Optional[str] = None
 
 
+class BadgeRead(BaseModel):
+    """Badge information schema."""
+    id: int
+    code: str
+    name: str
+    description: str
+    tier: str  # "Common", "Uncommon", "Rare", "Legendary"
+    icon_url: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserBadgeRead(BaseModel):
+    """User badge relationship schema."""
+    badge: BadgeRead
+    earned_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class BadgeWithEarnedStatus(BaseModel):
+    """Badge with earned status for display."""
+    id: int
+    code: str
+    name: str
+    description: str
+    tier: str
+    icon_url: Optional[str] = None
+    earned: bool
+    earned_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class LevelUpResponse(BaseModel):
-    """
-    Response when user levels up.
-    """
+    """Response for level up events."""
     leveled_up: bool
     old_level: int
     new_level: int
     xp_breakdown: XPBreakdown
     user_level_info: UserLevelInfo
+    new_badges: List[UserBadgeRead] = Field(default_factory=list, description="Newly earned badges")
+
+    class Config:
+        from_attributes = True
 
 
 class UserGamificationSummary(BaseModel):
@@ -107,3 +148,25 @@ class UserGamificationSummary(BaseModel):
     level_info: UserLevelInfo
     game_stats: UserGameStatsRead
     recent_xp_logs: List[XPLogRead] 
+    recent_badges: List[UserBadgeRead] = Field(default_factory=list, description="Last 5 badges earned")
+    badge_count: int = Field(..., description="Total number of badges earned")
+
+    class Config:
+        from_attributes = True
+
+
+class BadgeCreate(BaseModel):
+    """Schema for creating a new badge."""
+    code: str = Field(..., description="Unique badge code")
+    name: str = Field(..., description="Badge display name")
+    description: str = Field(..., description="Badge description")
+    tier: str = Field(..., description="Badge tier")
+    icon_url: Optional[str] = None
+
+
+class BadgeUpdate(BaseModel):
+    """Schema for updating badge information."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    tier: Optional[str] = None
+    icon_url: Optional[str] = None 

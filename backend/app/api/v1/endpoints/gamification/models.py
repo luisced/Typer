@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime, UTC
@@ -34,6 +34,44 @@ class XPLog(Base):
     # Relationships
     user = relationship("User", back_populates="xp_logs")
     test = relationship("UserTest", back_populates="xp_logs")
+
+
+class Badge(Base):
+    """
+    Badge definitions table.
+    Stores all available badges and their criteria.
+    """
+    __tablename__ = "badges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(100), unique=True, nullable=False, index=True)  # e.g., "first_test", "speed_50"
+    name = Column(String(200), nullable=False)  # e.g., "First Test Completed"
+    description = Column(String(500), nullable=False)  # e.g., "Complete your very first typing test."
+    tier = Column(String(50), nullable=False)  # e.g., "Common", "Uncommon", "Rare", "Legendary"
+    icon_url = Column(String(500), nullable=True)  # e.g., "/img/badges/speed50.svg"
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    
+    # Relationships
+    user_badges = relationship("UserBadge", back_populates="badge")
+
+
+class UserBadge(Base):
+    """
+    User badge tracking table.
+    Records which badges users have earned and when.
+    """
+    __tablename__ = "user_badges"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    badge_id = Column(Integer, ForeignKey("badges.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    earned_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    
+    # Relationships
+    user = relationship("User", back_populates="user_badges")
+    badge = relationship("Badge", back_populates="user_badges")
 
 
 class UserGameStats(Base):

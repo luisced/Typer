@@ -64,6 +64,7 @@ class User(Base):
     total_xp = Column(Integer, default=0)
     level = Column(Integer, default=1)
     xp_logs = relationship("XPLog", back_populates="user", cascade="all, delete-orphan")
+    user_badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
     game_stats = relationship("UserGameStats", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def verify_password(self, password: str) -> bool:

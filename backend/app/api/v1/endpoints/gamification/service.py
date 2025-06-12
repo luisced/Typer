@@ -1,9 +1,12 @@
 import math
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List, Any
 from sqlalchemy.orm import Session
-from datetime import datetime
+from sqlalchemy import func, desc, and_
+from datetime import datetime, UTC, timedelta
 from app.api.v1.endpoints.gamification.repository import GamificationRepository
 from app.api.v1.endpoints.gamification import schemas
+from .models import XPLog, UserGameStats, Badge, UserBadge
+from app.api.v1.endpoints.user.models import User
 
 
 class GamificationService:
@@ -191,12 +194,16 @@ class GamificationService:
         # Check if user leveled up
         leveled_up = new_level > old_level
         
+        # Check and award badges
+        new_badges = self.check_and_award_badges(user_id, test_id)
+        
         return schemas.LevelUpResponse(
             leveled_up=leveled_up,
             old_level=old_level,
             new_level=new_level,
             xp_breakdown=xp_breakdown,
-            user_level_info=schemas.UserLevelInfo(**level_info_after)
+            user_level_info=schemas.UserLevelInfo(**level_info_after),
+            new_badges=new_badges
         )
 
     def get_user_gamification_summary(self, user_id: str) -> schemas.UserGamificationSummary:
@@ -216,8 +223,245 @@ class GamificationService:
         recent_logs = self.repository.get_user_xp_logs(user_id, limit=10)
         recent_logs_schema = [schemas.XPLogRead.model_validate(log) for log in recent_logs]
         
+        # Get recent badges (last 5 earned)
+        user_badges = self.db.query(UserBadge).filter(
+            UserBadge.user_id == user_id
+        ).order_by(UserBadge.earned_at.desc()).limit(5).all()
+        
+        recent_badges = []
+        for ub in user_badges:
+            badge = self.db.query(Badge).filter(Badge.id == ub.badge_id).first()
+            if badge:
+                recent_badges.append(schemas.UserBadgeRead(
+                    badge=schemas.BadgeRead.model_validate(badge),
+                    earned_at=ub.earned_at
+                ))
+        
+        # Get total badge count
+        badge_count = self.db.query(UserBadge).filter(UserBadge.user_id == user_id).count()
+        
         return schemas.UserGamificationSummary(
             level_info=level_info,
             game_stats=game_stats_schema,
-            recent_xp_logs=recent_logs_schema
-        ) 
+            recent_xp_logs=recent_logs_schema,
+            recent_badges=recent_badges,
+            badge_count=badge_count
+        )
+
+    # Badge-related methods
+    def check_and_award_badges(self, user_id: str, test_id: Optional[str] = None) -> List[schemas.UserBadgeRead]:
+        """Check all badge criteria and award new badges."""
+        new_badges = []
+        
+        # Get user stats
+        user = self.db.query(User).filter(User.id == user_id).first()
+        game_stats = self.db.query(UserGameStats).filter(UserGameStats.user_id == user_id).first()
+        
+        if not user or not game_stats:
+            return new_badges
+        
+        # Check each badge type
+        new_badges.extend(self._check_test_count_badges(user_id, game_stats))
+        new_badges.extend(self._check_speed_badges(user_id, game_stats))
+        new_badges.extend(self._check_accuracy_badges(user_id, game_stats))
+        new_badges.extend(self._check_streak_badges(user_id, game_stats))
+        new_badges.extend(self._check_xp_level_badges(user_id, user))
+        
+        return new_badges
+
+    def _check_test_count_badges(self, user_id: str, game_stats: UserGameStats) -> List[schemas.UserBadgeRead]:
+        """Check badges based on test completion count."""
+        badges_to_check = [
+            ("first_test", 1),
+            ("novice_typist", 10),
+            ("experienced_typist", 50),
+            ("expert_typist", 100),
+            ("master_typist", 500),
+            ("legendary_typist", 1000),
+        ]
+        
+        return self._award_badges_by_criteria(user_id, badges_to_check, game_stats.total_tests_completed)
+
+    def _check_speed_badges(self, user_id: str, game_stats: UserGameStats) -> List[schemas.UserBadgeRead]:
+        """Check badges based on speed achievements."""
+        badges_to_check = [
+            ("speed_30", 30),
+            ("speed_50", 50),
+            ("speed_70", 70),
+            ("speed_100", 100),
+            ("speed_demon", 120),
+        ]
+        
+        return self._award_badges_by_criteria(user_id, badges_to_check, game_stats.best_wpm)
+
+    def _check_accuracy_badges(self, user_id: str, game_stats: UserGameStats) -> List[schemas.UserBadgeRead]:
+        """Check badges based on accuracy achievements."""
+        badges_to_check = [
+            ("accuracy_95", 95),
+            ("accuracy_98", 98),
+            ("accuracy_99", 99),
+            ("perfect_accuracy", 100),
+        ]
+        
+        return self._award_badges_by_criteria(user_id, badges_to_check, game_stats.best_accuracy)
+
+    def _check_streak_badges(self, user_id: str, game_stats: UserGameStats) -> List[schemas.UserBadgeRead]:
+        """Check badges based on streak achievements."""
+        badges_to_check = [
+            ("streak_3", 3),
+            ("streak_7", 7),
+            ("streak_14", 14),
+            ("streak_30", 30)
+        ]
+        
+        return self._award_badges_by_criteria(user_id, badges_to_check, game_stats.max_streak)
+
+    def _check_xp_level_badges(self, user_id: str, user: User) -> List[schemas.UserBadgeRead]:
+        """Check badges based on XP and level achievements."""
+        xp_badges = [
+            ("xp_1000", 1000),
+            ("xp_5000", 5000),
+            ("xp_10000", 10000),
+            ("xp_25000", 25000)
+        ]
+        
+        level_badges = [
+            ("level_5", 5),
+            ("level_10", 10),
+            ("level_20", 20),
+            ("level_50", 50)
+        ]
+        
+        new_badges = []
+        new_badges.extend(self._award_badges_by_criteria(user_id, xp_badges, user.total_xp or 0))
+        new_badges.extend(self._award_badges_by_criteria(user_id, level_badges, user.level or 1))
+        
+        return new_badges
+
+    def _award_badges_by_criteria(self, user_id: str, badges_to_check: List[tuple], current_value: int) -> List[schemas.UserBadgeRead]:
+        """Helper method to award badges based on numeric criteria."""
+        new_badges = []
+        
+        for badge_code, threshold in badges_to_check:
+            if current_value >= threshold:
+                badge = self._award_badge_if_not_exists(user_id, badge_code)
+                if badge:
+                    new_badges.append(badge)
+        
+        return new_badges
+
+    def _award_badge_if_not_exists(self, user_id: str, badge_code: str) -> Optional[schemas.UserBadgeRead]:
+        """Award a badge if the user doesn't already have it."""
+        # Check if badge exists
+        badge = self.db.query(Badge).filter(Badge.code == badge_code).first()
+        if not badge:
+            return None
+        
+        # Check if user already has this badge
+        existing_user_badge = self.db.query(UserBadge).filter(
+            and_(UserBadge.user_id == user_id, UserBadge.badge_id == badge.id)
+        ).first()
+        
+        if existing_user_badge:
+            return None
+        
+        # Award the badge
+        user_badge = UserBadge(
+            user_id=user_id,
+            badge_id=badge.id,
+            earned_at=datetime.now(UTC)
+        )
+        self.db.add(user_badge)
+        self.db.commit()  # Commit the badge award
+        self.db.refresh(user_badge)
+        
+        return schemas.UserBadgeRead(
+            badge=schemas.BadgeRead.model_validate(badge),
+            earned_at=user_badge.earned_at
+        )
+
+    def get_all_badges_for_user(self, user_id: str) -> List[schemas.BadgeWithEarnedStatus]:
+        """Get all badges with earned status for a user."""
+        # Get all badges
+        all_badges = self.db.query(Badge).all()
+        
+        # Get user's earned badges
+        user_badges = self.db.query(UserBadge).filter(UserBadge.user_id == user_id).all()
+        user_badge_dict = {ub.badge_id: ub.earned_at for ub in user_badges}
+        
+        result = []
+        for badge in all_badges:
+            earned_at = user_badge_dict.get(badge.id)
+            result.append(schemas.BadgeWithEarnedStatus(
+                id=badge.id,
+                code=badge.code,
+                name=badge.name,
+                description=badge.description,
+                tier=badge.tier,
+                icon_url=badge.icon_url,
+                earned=earned_at is not None,
+                earned_at=earned_at
+            ))
+        
+        return result
+
+    def create_badge(self, badge_code: str, name: str, description: str, tier: str, icon_url: Optional[str] = None) -> Badge:
+        """Create a new badge."""
+        badge = Badge(
+            code=badge_code,
+            name=name,
+            description=description,
+            tier=tier,
+            icon_url=icon_url
+        )
+        self.db.add(badge)
+        self.db.commit()
+        return badge
+
+    def initialize_default_badges(self):
+        """Initialize default badges if they don't exist."""
+        default_badges = [
+            # Test count badges
+            ("first_test", "First Steps", "Complete your very first typing test", "Common", "🎯"),
+            ("novice_typist", "Novice Typist", "Complete 10 typing tests", "Common", "📝"),
+            ("experienced_typist", "Experienced Typist", "Complete 50 typing tests", "Uncommon", "⌨️"),
+            ("expert_typist", "Expert Typist", "Complete 100 typing tests", "Rare", "🎖️"),
+            ("master_typist", "Master Typist", "Complete 500 typing tests", "Rare", "👑"),
+            ("legendary_typist", "Legendary Typist", "Complete 1000 typing tests", "Legendary", "🏆"),
+            
+            # Speed badges
+            ("speed_30", "Getting Faster", "Achieve 30+ WPM", "Common", "🚀"),
+            ("speed_50", "Speed Demon", "Achieve 50+ WPM", "Uncommon", "⚡"),
+            ("speed_70", "Lightning Fingers", "Achieve 70+ WPM", "Rare", "⚡⚡"),
+            ("speed_100", "Supersonic", "Achieve 100+ WPM", "Rare", "💨"),
+            ("speed_demon", "Speed of Light", "Achieve 120+ WPM", "Legendary", "🌟"),
+            
+            # Accuracy badges
+            ("accuracy_95", "Accurate Typist", "Achieve 95%+ accuracy", "Common", "🎯"),
+            ("accuracy_98", "Precision Master", "Achieve 98%+ accuracy", "Uncommon", "🔍"),
+            ("accuracy_99", "Near Perfect", "Achieve 99%+ accuracy", "Rare", "💎"),
+            ("perfect_accuracy", "Perfectionist", "Achieve 100% accuracy", "Legendary", "⭐"),
+            
+            # Streak badges
+            ("streak_3", "Getting Consistent", "Maintain a 3-day streak", "Common", "🔥"),
+            ("streak_7", "Week Warrior", "Maintain a 7-day streak", "Uncommon", "🔥🔥"),
+            ("streak_14", "Dedicated Typist", "Maintain a 14-day streak", "Rare", "🔥🔥🔥"),
+            ("streak_30", "Unstoppable", "Maintain a 30-day streak", "Legendary", "🔥👑"),
+            
+            # XP badges
+            ("xp_1000", "XP Collector", "Earn 1,000 total XP", "Common", "⭐"),
+            ("xp_5000", "XP Hunter", "Earn 5,000 total XP", "Uncommon", "🌟"),
+            ("xp_10000", "XP Master", "Earn 10,000 total XP", "Rare", "💫"),
+            ("xp_25000", "XP Legend", "Earn 25,000 total XP", "Legendary", "✨"),
+            
+            # Level badges
+            ("level_5", "Rising Star", "Reach level 5", "Common", "📈"),
+            ("level_10", "Skilled Typist", "Reach level 10", "Uncommon", "📊"),
+            ("level_20", "Advanced Typist", "Reach level 20", "Rare", "📋"),
+            ("level_50", "Typing Master", "Reach level 50", "Legendary", "🏅")
+        ]
+        
+        for badge_code, name, description, tier, icon_url in default_badges:
+            existing = self.db.query(Badge).filter(Badge.code == badge_code).first()
+            if not existing:
+                self.create_badge(badge_code, name, description, tier, icon_url) 

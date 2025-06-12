@@ -33,6 +33,19 @@ async def get_current_user(
         raise credentials_exception
     return user
 
+
+async def get_current_superuser(
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """Get current user and verify they are a superuser."""
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Superuser access required."
+        )
+    return current_user
+
+
 def require_roles(required_roles: List[Role]):
     async def role_checker(
         current_user: dict = Depends(get_current_user),
