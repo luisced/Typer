@@ -40,7 +40,6 @@ const AccountSettings = ({ user }: { user?: any }) => {
           />
         )}
       </Box>
-      <TestHistory />
       {/* Keyboard Mastery Section */}
       {tests && tests.length > 0 && (
         <Box
@@ -57,6 +56,7 @@ const AccountSettings = ({ user }: { user?: any }) => {
           />
         </Box>
       )}
+      <TestHistory />
     </Flex>
   )
 }
