@@ -1,6 +1,6 @@
 import { Box, Flex, Avatar, Text, Progress, VStack, HStack, Divider, Spinner, Alert, AlertIcon, Icon } from '@chakra-ui/react'
 import { FiCheckSquare, FiClock, FiTrendingUp, FiTarget, FiZap, FiAward } from 'react-icons/fi'
-import { useTests } from '../hooks/useTests'
+import { useTests } from '@/features/typing-test/hooks/useTests'
 import { useGamification } from '../hooks/useGamification'
 
 interface ProfileCardProps {

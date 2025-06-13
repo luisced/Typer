@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Flex, Text, Divider, IconButton } from '@chakra-ui/react';
-import { useLeaderboard } from '../../context/LeaderboardContext';
+import { useLeaderboard } from '../../../app/providers/LeaderboardContext';
 
 interface UserComparisonProps {
   userIds: string[];

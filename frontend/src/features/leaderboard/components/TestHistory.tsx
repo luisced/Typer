@@ -20,7 +20,7 @@ import {
   HStack
 } from '@chakra-ui/react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useTests } from '../hooks/useTests';
+import { useTests } from '@/features/typing-test/hooks/useTests';
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 

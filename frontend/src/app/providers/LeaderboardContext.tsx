@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { getLeaderboard, type LeaderboardUser } from '../utils/api';
+import { getCurrentUser } from '../../shared/utils/api';
+import { getLeaderboard, type LeaderboardUser } from '../../shared/utils/api';
 
 interface LeaderboardContextType {
   tab: string;

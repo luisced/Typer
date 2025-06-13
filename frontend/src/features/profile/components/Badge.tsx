@@ -1,5 +1,5 @@
 import { Box, Text, Tooltip, VStack } from '@chakra-ui/react';
-import type { BadgeWithEarnedStatus } from '../utils/api';
+import type { BadgeWithEarnedStatus } from '@/shared/utils/api';
 
 interface BadgeProps {
   badge: BadgeWithEarnedStatus;

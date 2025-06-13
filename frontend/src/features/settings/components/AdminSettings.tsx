@@ -5,7 +5,7 @@ import {
 import { FaUserEdit, FaBan, FaTrash, FaEye, FaUserShield, FaCheck, FaTimes } from 'react-icons/fa'
 import {
   listUsers, getUserById, updateUser, deleteUser, banUser, unbanUser, assignUserRole, removeUserRole, getAuditLogs, getSiteSettings, updateSiteSettings
-} from '../../utils/api'
+} from '@/shared/utils/api'
 
 const AdminSettings = () => {
   const [search, setSearch] = useState('')

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flex, Button, Icon, Text } from '@chakra-ui/react';
 import { FaTrophy, FaCalendar, FaClock } from 'react-icons/fa';
-import { useLeaderboard } from '../../context/LeaderboardContext';
+import { useLeaderboard } from '../../../app/providers/LeaderboardContext';
 
 export const LeaderboardTabs: React.FC = () => {
   const { tab, setTab } = useLeaderboard();

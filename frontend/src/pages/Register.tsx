@@ -13,7 +13,7 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { PasswordInput, PasswordStrengthMeter } from '../components/ui/password-input';
-import { registerUser, getSiteSettings } from '../utils/api';
+import { registerUser, getSiteSettings } from '@/shared/utils/api';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 

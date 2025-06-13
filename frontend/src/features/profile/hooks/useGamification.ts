@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   getMyGamificationSummary, 
   getMyBadges
-} from '../utils/api';
-import type { UserGamificationSummary, BadgeWithEarnedStatus } from '../utils/api';
+} from '@/shared/utils/api';
+import type { UserGamificationSummary, BadgeWithEarnedStatus } from '@/shared/utils/api';
 
 interface UseGamificationOptions {
   enabled?: boolean;

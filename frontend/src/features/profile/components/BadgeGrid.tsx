@@ -1,6 +1,6 @@
 import { Box, SimpleGrid, Text, VStack, HStack, Badge as ChakraBadge, Spinner, Alert, AlertIcon } from '@chakra-ui/react';
 import Badge from './Badge';
-import type { BadgeWithEarnedStatus } from '../utils/api';
+import type { BadgeWithEarnedStatus } from '@/shared/utils/api';
 
 interface BadgeGridProps {
   badges: BadgeWithEarnedStatus[];

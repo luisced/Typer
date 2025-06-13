@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
-import MainLayout from '../layouts/MainLayout'
-import Home from '../pages/Home'
-import Test from '../pages/Test'
-import Profile from '../pages/Profile'
+import MainLayout from '../../shared/components/layout/MainLayout'
+import Home from '../../pages/Home'
+import Test from '../../pages/Test'
+import Profile from '../../pages/Profile'
 
 const AppRoutes = () => {
   return (

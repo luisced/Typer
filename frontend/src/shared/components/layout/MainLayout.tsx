@@ -2,7 +2,7 @@ import { Box, Container, Flex, Link as ChakraLink, Avatar, AvatarGroup, Text, Ic
 import { Outlet, Link as RouterLink } from 'react-router-dom'
 import { FaKeyboard, FaTrophy, FaUserCircle } from 'react-icons/fa'
 import { useEffect, useState } from 'react'
-import { getCurrentUser } from '../../utils/api'
+import { getCurrentUser } from '@/shared/utils/api'
 
 const MainLayout = () => {
   const navBg = useColorModeValue('rgba(255,255,255,0.85)', 'rgba(31,41,55,0.85)')

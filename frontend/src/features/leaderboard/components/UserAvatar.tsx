@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarBadge } from '@chakra-ui/react';
-import type { LeaderboardUser } from '../../utils/api';
+import type { LeaderboardUser } from '@/shared/utils/api';
 
 interface UserAvatarProps {
   user: LeaderboardUser;

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { saveTest, fetchAllTests } from '../api/tests';
-import type { TestCreate, TestResponse } from '../api/tests';
+import { saveTest, fetchAllTests } from '../services/tests';
+import type { TestCreate, TestResponse } from '../services/tests';
 
 export const useTests = () => {
   const saveTestMutation = useMutation<TestResponse, Error, TestCreate>({

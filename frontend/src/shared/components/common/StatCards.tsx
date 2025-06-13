@@ -1,6 +1,6 @@
 import { SimpleGrid, Box, Text, Icon, useColorModeValue } from '@chakra-ui/react'
 import { FaTrophy, FaClock, FaKeyboard, FaChartLine } from 'react-icons/fa'
-import { useTests } from '../hooks/useTests'
+import { useTests } from '@/features/typing-test/hooks/useTests'
 
 const StatCards = () => {
   const { tests, isLoading } = useTests()

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Box, Flex } from '@chakra-ui/react'
-import OptionBar from '../components/OptionBar'
-import Stats from '../components/Stats'
-import AdvancedTypingTest from '../components/AdvancedTypingTest'
-import { useCustomizationStore } from '../store/customizationStore'
-import { getCurrentUser } from '../utils/api'
+import React, { useState, useEffect } from 'react'
+import { Box, Flex, Container } from '@chakra-ui/react'
+import { OptionBar } from '@/features/settings'
+import { Stats } from '@/shared/components/common'
+import { AdvancedTypingTest } from '@/features/typing-test'
+import { useCustomizationStore } from '@/app/store/customizationStore'
+import { getCurrentUser } from '@/shared/utils/api'
 import Cookies from 'js-cookie'
 
 const DEFAULT_TIME = 15

@@ -1,3 +1,3 @@
 // Common components exports
-export * from './StatCards'
-export * from './Stats'
+export { default as StatCards } from './StatCards'
+export { default as Stats } from './Stats'

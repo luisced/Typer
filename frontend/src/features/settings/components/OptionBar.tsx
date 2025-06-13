@@ -18,8 +18,8 @@ import {
   FaTimes,
 } from 'react-icons/fa'
 import Cookies from 'js-cookie'
-import CustomTestModal, { type CustomTestOptions } from './CustomTestModal'
-import { getCustomTestContent } from '../api/tests'
+import CustomTestModal, { type CustomTestOptions } from '../../typing-test/components/CustomTestModal'
+import { getCustomTestContent } from '../../typing-test/services/tests'
 
 // Define mode types
 export type ModeKey = 'punctuation' | 'numbers' | 'time' | 'words' | 'code' | 'zen' | 'custom'

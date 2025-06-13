@@ -1,4 +1,4 @@
-import { api } from '../api/client';
+import { api } from '../../../shared/api/client';
 import Cookies from 'js-cookie';
 
 export interface LoginCredentials {

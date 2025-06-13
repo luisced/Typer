@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Flex, Button, Input, InputGroup, InputLeftElement, InputRightElement, Icon, IconButton } from '@chakra-ui/react';
 import { FaClock, FaSearch, FaTimes } from 'react-icons/fa';
-import { useLeaderboard } from '../../context/LeaderboardContext';
+import { useLeaderboard } from '../../../app/providers/LeaderboardContext';
 
 export const LeaderboardFilters: React.FC = () => {
   const { timeMode, setTimeMode } = useLeaderboard();

@@ -40,7 +40,7 @@ import { keyframes } from '@emotion/react';
 import { FaCrown, FaChevronUp, FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { UserAvatar } from './UserAvatar';
 import { UserBadge } from './UserBadge';
-import { useLeaderboard } from '../../context/LeaderboardContext';
+import { useLeaderboard } from '../../../app/providers/LeaderboardContext';
 import UserComparison from './UserComparison';
 
 const glow = keyframes`

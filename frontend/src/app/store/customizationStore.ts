@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { api } from '../api/client'
+import { api } from '../../shared/api/client'
 
 export type CustomizationConfig = {
   theme: string

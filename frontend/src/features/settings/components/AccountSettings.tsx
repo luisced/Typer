@@ -1,11 +1,11 @@
-import { Flex, Box, Alert, AlertIcon } from '@chakra-ui/react'
-import ProfileCard from '../ProfileCard'
-import { TestHistory } from '../TestHistory'
-import BadgeGrid from '../BadgeGrid'
-import KeyboardVisualization from '../KeyboardVisualization'
-import { useGamification } from '../../hooks/useGamification'
-import { useTests } from '../../hooks/useTests'
-import { aggregateCharLogs } from '../../utils/aggregateCharLogs'
+import { Box, Flex, VStack, Divider, Text, Alert, AlertIcon } from '@chakra-ui/react'
+import { ProfileCard } from '@/features/profile'
+import { TestHistory } from '@/features/leaderboard'
+import { BadgeGrid } from '@/features/profile'
+import { KeyboardVisualization } from '@/features/typing-test'
+import { useGamification } from '@/features/profile'
+import { useTests } from '@/features/typing-test'
+import { aggregateCharLogs } from '@/features/typing-test/utils/aggregateCharLogs'
 
 const AccountSettings = ({ user }: { user?: any }) => {
   const { badges, loading: gamificationLoading, error: gamificationError } = useGamification({ enabled: true, autoFetch: true });

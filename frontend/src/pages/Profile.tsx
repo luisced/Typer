@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { Flex, Spinner, Alert, AlertIcon } from '@chakra-ui/react'
-import SettingsSidebar from '../components/SettingsSidebar'
-import AccountSettings from '../components/settings/AccountSettings'
-import AuthenticationSettings from '../components/settings/AuthenticationSettings'
-import DangerZoneSettings from '../components/settings/DangerZoneSettings'
-import AdminSettings from '../components/settings/AdminSettings'
-import AISettings from '../components/settings/AISettings'
-import CustomizationSettings from '../components/settings/CustomizationSettings'
-import { getCurrentUser } from '../utils/api'
+import React, { useState, useEffect } from 'react'
+import { Box, Flex, Spinner, Alert, AlertIcon } from '@chakra-ui/react'
+import { SettingsSidebar } from '@/features/settings'
+import { AccountSettings } from '@/features/settings'
+import { AuthenticationSettings } from '@/features/settings'
+import { DangerZoneSettings } from '@/features/settings'
+import { AdminSettings } from '@/features/settings'
+import { AISettings } from '@/features/settings'
+import { CustomizationSettings } from '@/features/settings'
+import { getCurrentUser } from '@/shared/utils/api'
 
 const Profile = () => {
   const [selected, setSelected] = useState('account')

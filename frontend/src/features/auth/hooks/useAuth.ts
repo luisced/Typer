@@ -1,4 +1,4 @@
-import { useUserStore } from '../store'
+import { useUserStore } from '../../../app/store'
 
 export const useAuth = () => {
   const { token, setToken, clearToken } = useUserStore()
